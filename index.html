@@ -750,8 +750,10 @@ function delRecord(id){
       .then(function(res){
         if (res.error) throw res.error;
         records = records.filter(function(r){ return r.id !== id; });
-        state.draws = state.draws.filter(function(x){ return x.id !== id; });
-        saveLocal(); renderAll(); toast('已删除');
+        state.log = state.log.filter(function(x){ return x.id !== id; });
+        saveLocal();
+        renderRecords(); updateStatus();
+        toast('已删除');
       })
       .catch(function(){ toast('删除失败，请检查网络'); });
   });
@@ -764,8 +766,10 @@ function delDay(day){
       .then(function(res){
         if (res.error) throw res.error;
         records = records.filter(function(r){ return r.day !== day; });
-        if (day === todayStr()){ state.draws = []; state.cleared = true; saveLocal(); }
-        renderAll(); toast('已删除');
+        state.log = state.log.filter(function(x){ return x.day !== day; });
+        saveLocal();
+        renderRecords(); updateStatus();
+        toast('已删除 ' + day);
       })
       .catch(function(){ toast('删除失败，请检查网络'); });
   });
@@ -842,9 +846,10 @@ $('records').addEventListener('click', function(e){
 
 function removeLocal(uid){
   ask('删除这一条记录？', function(){
-    state.draws = state.draws.filter(function(x){ return x.uid !== uid; });
     state.log = state.log.filter(function(x){ return x.uid !== uid; });
-    saveLocal(); renderAll(); toast('已删除');
+    saveLocal();
+    renderRecords(); updateStatus();
+    toast('已删除');
   });
 }
 $('auth-pwd').addEventListener('keydown', function(e){ if (e.key === 'Enter') doAuth(); });
