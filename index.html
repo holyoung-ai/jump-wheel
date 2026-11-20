@@ -184,6 +184,8 @@ svg{display:block;width:100%;height:100%}
 </div>
 
 <!-- 转盘页 -->
+<div class="statusbar" id="statusbar"></div>
+
 <section class="page" id="view-wheel">
   <div class="head">
     <div class="mascot">🐱</div>
@@ -394,7 +396,7 @@ function showDebug(){
     '待上传：' + pending.length + '\n' +
     '本机存储：' + (storageOK() ? '可用' : '不可用（隐私模式？）') + '\n' +
     '最近错误：' + (lastErr || '无');
-  $('debug-login').style.display = user ? 'none' : 'block';
+  if ($('debug-login')) $('debug-login').style.display = user ? 'none' : 'block';
   $('debug').hidden = false;
 }
 function renderBar(){
@@ -813,9 +815,9 @@ $('reset').addEventListener('click', function(){
     toast('位置已清空');
   });
 });
-$('statusbar').addEventListener('click', showDebug);
-$('debug-close').addEventListener('click', function(){ $('debug').hidden = true; });
-$('debug-login').addEventListener('click', function(){ $('debug').hidden = true; openAuth('login'); });
+if ($('statusbar')) $('statusbar').addEventListener('click', showDebug);
+if ($('debug-close')) $('debug-close').addEventListener('click', function(){ $('debug').hidden = true; });
+if ($('debug-login')) $('debug-login').addEventListener('click', function(){ $('debug').hidden = true; openAuth('login'); });
 $('ask-no').addEventListener('click', closeAsk);
 $('ask-yes').addEventListener('click', function(){
   var f = askCb; closeAsk(); if (f) f();
