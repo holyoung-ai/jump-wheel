@@ -352,14 +352,17 @@ function sectorPath(i){
 
 /* ================= 本地状态 ================= */
 var LKEY = 'jump-wheel-day-v2';
-var state = { date: todayStr(), draws: [] };
+var state = { date: todayStr(), draws: [], log: [] };
 
 function loadLocal(){
   try {
     var raw = localStorage.getItem(LKEY);
     if (raw){
       var o = JSON.parse(raw);
-      if (o && o.date === todayStr() && Array.isArray(o.draws)) state = o;
+      if (o && o.date === todayStr() && Array.isArray(o.draws)){
+        state = o;
+        if (!Array.isArray(state.log)) state.log = state.draws.slice();
+      }
     }
   } catch(e){}
 }
@@ -411,12 +414,11 @@ async function pullRecords(){
   try {
     var res = await sb.from('records').select('*')
       .is('deleted_at', null)
-      .order('day', { ascending:false }).order('slot', { ascending:true })
+      .order('day', { ascending:false }).order('created_at', { ascending:true })
       .limit(1000);
     if (res.error) throw res.error;
     records = res.data || [];
     cloudReady = true;
-    mergeTodayFromCloud();
     renderAll();
   } catch(e){
     cloudReady = false;
@@ -447,14 +449,11 @@ async function pushRecord(rec){
   var row = { user_id: user.id, day: rec.day, slot: rec.slot, task_id: rec.idx,
               task_label: rec.task, kind: rec.kind, amount: rec.amount };
   try {
-    var res = await sb.from('records').upsert(row, { onConflict:'user_id,day,slot' }).select();
+    var res = await sb.from('records').insert(row).select();
     if (res.error) throw res.error;
     if (res.data && res.data[0]) {
       var saved = res.data[0];
-      var cur = state.draws.filter(function(x){ return x.slot === rec.slot; })[0];
-      if (cur) { cur.id = saved.id; saveLocal(); }
-      // 同步进本地缓存，记录页立刻能看到
-      records = records.filter(function(r){ return !(r.day === saved.day && r.slot === saved.slot); });
+      rec.id = saved.id; saveLocal();
       records.push(saved);
       cloudReady = true;
     }
@@ -470,8 +469,14 @@ async function flushPending(){
   var left = [];
   for (var i = 0; i < pending.length; i++){
     try {
-      var res = await sb.from('records').upsert(pending[i], { onConflict:'user_id,day,slot' });
+      var res = await sb.from('records').insert(pending[i]).select();
       if (res.error) throw res.error;
+      var saved = res.data && res.data[0];
+      if (saved){
+        records.push(saved);
+        var e = state.log.filter(function(x){ return !x.id && x.slot === saved.slot; })[0];
+        if (e) e.id = saved.id;
+      }
     } catch(e){ left.push(pending[i]); }
   }
   pending = left; savePending();
@@ -606,9 +611,11 @@ function spin(){
     var slot = firstFreeSlot();
     if (!slot) return;
     var rec = { slot: slot, idx: idx, short: s.short, task: s.task, color: s.color,
-                kind: s.kind, amount: s.amount, day: todayStr() };
+                kind: s.kind, amount: s.amount, day: todayStr(),
+                uid: 'u' + Date.now() + Math.floor(Math.random() * 1000) };
     state.cleared = false;
     state.draws.push(rec);
+    state.log.push(rec);
     saveLocal();
     renderWheelState();
     showResult(idx, slot);
@@ -649,13 +656,13 @@ function confetti(n){
 function allRecords(){
   var d = todayStr();
   var out = (user && cloudReady) ? records.slice() : [];
-  state.draws.forEach(function(x){
+  var seen = {};
+  out.forEach(function(r){ if (r.id) seen[r.id] = 1; });
+  state.log.forEach(function(x){
     if (x.id){
-      var has = out.some(function(r){ return r.id === x.id; });
-      if (!has) out.push({ id:x.id, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount });
+      if (!seen[x.id]) { seen[x.id] = 1; out.push({ id:x.id, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount }); }
     } else {
-      var dup = out.some(function(r){ return r.day === d && r.slot === x.slot; });
-      if (!dup) out.push({ id:null, local:true, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount });
+      out.push({ id:null, local:true, uid:x.uid, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount });
     }
   });
   return out;
@@ -725,7 +732,7 @@ function renderDays(rs){
     var chips = arr.map(function(r){
       var seg = SEG[r.task_id] || SEG[0];
       return '<span class="rc"><i style="background:' + seg.color + '">' + '</i>' + r.task_label +
-             '<button type="button" data-del="' + (r.id || '') + '" data-day="' + r.day + '" data-slot="' + r.slot + '" title="删除这条">×</button>' +
+             '<button type="button" data-del="' + (r.id || '') + '" data-day="' + r.day + '" data-slot="' + r.slot + '" data-uid="' + (r.uid || '') + '" title="删除这条">×</button>' +
              '</span>';
     }).join('');
     return '<div class="day"><div class="day__top">' +
@@ -826,16 +833,17 @@ $('records').addEventListener('click', function(e){
   var t = e.target;
   if (t.dataset && t.dataset.del !== undefined && t.dataset.del !== '' && t.tagName === 'BUTTON'){
     delRecord(t.dataset.del);
-  } else if (t.dataset && t.dataset.del === '' && t.dataset.slot){
-    removeLocal(t.dataset.day, parseInt(t.dataset.slot, 10));
+  } else if (t.dataset && t.dataset.del === '' && t.dataset.uid){
+    removeLocal(t.dataset.uid);
   } else if (t.dataset && t.dataset.day && t.classList.contains('day__del')){
     delDay(t.dataset.day);
   }
 });
 
-function removeLocal(day, slot){
+function removeLocal(uid){
   ask('删除这一条记录？', function(){
-    state.draws = state.draws.filter(function(x){ return x.slot !== slot; });
+    state.draws = state.draws.filter(function(x){ return x.uid !== uid; });
+    state.log = state.log.filter(function(x){ return x.uid !== uid; });
     saveLocal(); renderAll(); toast('已删除');
   });
 }
