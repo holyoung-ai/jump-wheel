@@ -34,6 +34,10 @@ body{
 .acct{margin-left:auto;border:0;background:#fff;border-radius:16px;padding:7px 12px;font-family:inherit;font-size:12px;
   color:#7A6558;cursor:pointer;box-shadow:0 3px 10px -6px rgba(150,100,60,.6);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .acct.on{background:#EAF6EF;color:#3F6B4A}
+.statusbar{position:relative;z-index:4;width:100%;max-width:520px;text-align:center;font-size:10.5px;letter-spacing:.04em;
+  color:#A08C7C;padding:2px 0 0;cursor:pointer;line-height:1.6}
+.statusbar.ok{color:#3F6B4A}
+.statusbar.warn{color:#C9573A}
 
 /* 页面容器 */
 .page{position:relative;z-index:2;width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center}
@@ -260,6 +264,15 @@ svg{display:block;width:100%;height:100%}
   </div>
 </div>
 
+<div class="modal" id="debug" hidden>
+  <div class="sheet">
+    <h2 style="font-size:16px">同步诊断</h2>
+    <p class="hint" style="white-space:pre-line;line-height:1.9;font-size:12px" id="debug-body"></p>
+    <button class="go ghost" id="debug-login" type="button" style="margin-bottom:9px">去登录 / 注册</button>
+    <button class="go" id="debug-close" type="button">知道了</button>
+  </div>
+</div>
+
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 
@@ -268,6 +281,8 @@ svg{display:block;width:100%;height:100%}
 /* ================= 配置 ================= */
 var SB_URL = 'https://shgbzrvupyzomrcwqrzn.supabase.co';
 var SB_KEY = 'sb_publishable_nv6ShUt5NlXgFQVe39P7OQ_XV5xlGnM';
+var BUILD = '2026-11-20.3';
+var lastErr = '';
 var sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 var SEG = [
@@ -357,6 +372,31 @@ var pending = [];          // 待同步队列
 function loadPending(){ try { pending = JSON.parse(localStorage.getItem('jw-pending') || '[]'); } catch(e){ pending = []; } }
 function savePending(){ try { localStorage.setItem('jw-pending', JSON.stringify(pending)); } catch(e){} }
 
+function storageOK(){
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); return true; } catch(e){ return false; }
+}
+function updateStatus(){
+  var el = $('statusbar'); if (!el) return;
+  var txt;
+  if (!user) txt = '未登录 · 记录只保存在这台设备上';
+  else if (!cloudReady) txt = '云端未连上 · 待同步 ' + pending.length + ' 条';
+  else txt = '已同步到云端' + (pending.length ? ' · 待上传 ' + pending.length + ' 条' : '');
+  el.textContent = txt;
+  el.className = 'statusbar ' + ((user && cloudReady && !pending.length) ? 'ok' : (user ? 'warn' : ''));
+}
+function showDebug(){
+  $('debug-body').textContent =
+    '版本：' + BUILD + '\n' +
+    '登录：' + (user ? user.email : '未登录') + '\n' +
+    '云端：' + (user ? (cloudReady ? '已连接' : '未连接') : '—') + '\n' +
+    '云端记录数：' + records.length + '\n' +
+    '本机今日：' + state.draws.length + ' / 6\n' +
+    '待上传：' + pending.length + '\n' +
+    '本机存储：' + (storageOK() ? '可用' : '不可用（隐私模式？）') + '\n' +
+    '最近错误：' + (lastErr || '无');
+  $('debug-login').style.display = user ? 'none' : 'block';
+  $('debug').hidden = false;
+}
 function renderBar(){
   var b = $('acct');
   if (user){ b.textContent = user.email.split('@')[0]; b.classList.add('on'); b.title = user.email; }
@@ -378,6 +418,7 @@ async function pullRecords(){
     renderAll();
   } catch(e){
     cloudReady = false;
+    lastErr = '拉取：' + (e.message || e);
     console.warn('拉取失败', e);
   }
 }
@@ -416,6 +457,7 @@ async function pushRecord(rec){
       cloudReady = true;
     }
   } catch(e){
+    lastErr = '写入：' + (e.message || e);
     pending.push(row); savePending();
     toast('离线，稍后自动同步');
   }
@@ -771,6 +813,9 @@ $('reset').addEventListener('click', function(){
     toast('位置已清空');
   });
 });
+$('statusbar').addEventListener('click', showDebug);
+$('debug-close').addEventListener('click', function(){ $('debug').hidden = true; });
+$('debug-login').addEventListener('click', function(){ $('debug').hidden = true; openAuth('login'); });
 $('ask-no').addEventListener('click', closeAsk);
 $('ask-yes').addEventListener('click', function(){
   var f = askCb; closeAsk(); if (f) f();
@@ -801,12 +846,13 @@ document.addEventListener('keydown', function(e){
 window.addEventListener('online', function(){ flushPending(); pullRecords(); });
 
 /* ================= 启动 ================= */
-function renderAll(){ renderWheelState(); renderBar(); if (!$('view-records').hidden) renderRecords(); }
+function renderAll(){ renderWheelState(); renderBar(); updateStatus(); if (!$('view-records').hidden) renderRecords(); }
 
 async function boot(){
   loadLocal();
   loadPending();
   renderAll();
+  updateStatus();
 
   var s = null;
   try { var r = await sb.auth.getSession(); s = r.data.session; } catch(e){}
