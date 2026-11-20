@@ -148,6 +148,8 @@ svg{display:block;width:100%;height:100%}
 .confetti i{position:absolute;width:8px;height:12px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.2}}
 
+.ask-msg{white-space:pre-line;font-size:14px;line-height:1.85;color:#5A4335;margin:8px 2px 18px;text-align:center}
+.go.ghost{background:#F1E5D8;color:#8A7264;box-shadow:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,10px);background:rgba(60,42,32,.9);color:#fff;
   font-size:12px;padding:9px 16px;border-radius:20px;opacity:0;transition:.25s;z-index:40;pointer-events:none;max-width:80vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
@@ -246,6 +248,16 @@ svg{display:block;width:100%;height:100%}
   </div>
 </div>
 
+<div class="modal" id="ask" hidden>
+  <div class="sheet">
+    <p class="ask-msg" id="ask-msg"></p>
+    <div style="display:flex;gap:10px">
+      <button class="go ghost" id="ask-no" type="button">取消</button>
+      <button class="go" id="ask-yes" type="button">确定</button>
+    </div>
+  </div>
+</div>
+
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 
@@ -280,6 +292,13 @@ function toast(msg){
   var t = $('toast'); t.textContent = msg; t.classList.add('on');
   clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2200);
 }
+var askCb = null;
+function ask(msg, cb){
+  $('ask-msg').textContent = msg;
+  askCb = cb;
+  $('ask').hidden = false;
+}
+function closeAsk(){ $('ask').hidden = true; askCb = null; }
 function vibrate(){ try { if (navigator.vibrate) navigator.vibrate([12, 60, 22]); } catch(e){} }
 
 /* ================= 画转盘 ================= */
@@ -363,6 +382,7 @@ async function pullRecords(){
 
 /* 把云端今天的记录并进本地今日状态 */
 function mergeTodayFromCloud(){
+  if (state.cleared) return;   // 用户手动清空过，不再从云端填回来
   var d = todayStr();
   var map = {};
   state.draws.forEach(function(x){ map[x.slot] = x; });
@@ -468,19 +488,28 @@ async function afterLogin(){
 var rot = 0, spinning = false;
 function remaining(){ return PER_DAY - state.draws.length; }
 
+function slotMap(){
+  var m = {};
+  state.draws.forEach(function(d){ m[d.slot] = d; });
+  return m;
+}
+function firstFreeSlot(){
+  var m = slotMap();
+  for (var i = 1; i <= PER_DAY; i++){ if (!m[i]) return i; }
+  return 0;
+}
 function renderWheelState(){
-  var html = '';
-  for (var i = 0; i < PER_DAY; i++){
-    var d = state.draws[i];
+  var m = slotMap(), now = firstFreeSlot(), html = '';
+  for (var i = 1; i <= PER_DAY; i++){
+    var d = m[i];
     if (d) html += '<span class="slot filled" style="background:' + d.color + '">' + d.short + '</span>';
-    else html += '<span class="slot' + (i === state.draws.length ? ' now' : '') + '">' + (i+1) + '</span>';
+    else html += '<span class="slot' + (i === now ? ' now' : '') + '">' + i + '</span>';
   }
   $('slots').innerHTML = html;
   $('cnt').textContent = state.draws.length + ' / ' + PER_DAY;
 
-  var left = remaining();
   var btn = $('spin');
-  if (left <= 0){
+  if (remaining() <= 0 || now === 0){
     btn.disabled = true;
     btn.firstChild.nodeValue = '完成 🎉';
     $('spin-sub').textContent = '明天再来';
@@ -489,7 +518,7 @@ function renderWheelState(){
   } else {
     btn.disabled = false;
     btn.firstChild.nodeValue = '转！';
-    $('spin-sub').textContent = '第 ' + (state.draws.length + 1) + ' 组';
+    $('spin-sub').textContent = '第 ' + now + ' 组';
     $('done').hidden = true;
   }
 }
@@ -524,9 +553,11 @@ function spin(){
     spinning = false;
     $('pointer').classList.add('tap');
     var s = SEG[idx];
-    var slot = state.draws.length + 1;
+    var slot = firstFreeSlot();
+    if (!slot) return;
     var rec = { slot: slot, idx: idx, short: s.short, task: s.task, color: s.color,
                 kind: s.kind, amount: s.amount, day: todayStr() };
+    state.cleared = false;
     state.draws.push(rec);
     saveLocal();
     renderWheelState();
@@ -642,31 +673,32 @@ function renderDays(rs){
   }).join('');
 }
 
-async function delRecord(id){
-  if (!confirm('删除这一条记录？')) return;
-  if (!user || !id) return;
-  try {
-    var res = await sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('id', id);
-    if (res.error) throw res.error;
-    records = records.filter(function(r){ return r.id !== id; });
-    state.draws = state.draws.filter(function(x){ return x.id !== id; });
-    saveLocal();
-    renderAll();
-    toast('已删除');
-  } catch(e){ toast('删除失败，请检查网络'); }
+function delRecord(id){
+  if (!user || !id){ toast('这条还没同步到云端，暂时删不了'); return; }
+  ask('删除这一条记录？', function(){
+    sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+      .then(function(res){
+        if (res.error) throw res.error;
+        records = records.filter(function(r){ return r.id !== id; });
+        state.draws = state.draws.filter(function(x){ return x.id !== id; });
+        saveLocal(); renderAll(); toast('已删除');
+      })
+      .catch(function(){ toast('删除失败，请检查网络'); });
+  });
 }
 
-async function delDay(day){
-  if (!confirm('删除 ' + day + ' 这一天的全部记录？')) return;
-  if (!user) return;
-  try {
-    var res = await sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('day', day);
-    if (res.error) throw res.error;
-    records = records.filter(function(r){ return r.day !== day; });
-    if (day === todayStr()){ state.draws = []; saveLocal(); }
-    renderAll();
-    toast('已删除');
-  } catch(e){ toast('删除失败，请检查网络'); }
+function delDay(day){
+  if (!user){ toast('登录后才能删除云端记录'); return; }
+  ask('删除 ' + day + ' 这一天的全部记录？', function(){
+    sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('day', day)
+      .then(function(res){
+        if (res.error) throw res.error;
+        records = records.filter(function(r){ return r.day !== day; });
+        if (day === todayStr()){ state.draws = []; state.cleared = true; saveLocal(); }
+        renderAll(); toast('已删除');
+      })
+      .catch(function(){ toast('删除失败，请检查网络'); });
+  });
 }
 
 /* ================= 导出 ================= */
@@ -702,7 +734,9 @@ document.querySelectorAll('.tab').forEach(function(t){
 });
 $('acct').addEventListener('click', function(){
   if (user){
-    if (confirm('退出登录？')) { sb.auth.signOut().then(function(){ user = null; records = []; cloudReady = false; renderBar(); renderAll(); }); }
+    ask('退出登录？', function(){
+      sb.auth.signOut().then(function(){ user = null; records = []; cloudReady = false; renderBar(); renderAll(); });
+    });
   } else openAuth('login');
 });
 $('auth-go').addEventListener('click', doAuth);
@@ -710,11 +744,17 @@ $('auth-close').addEventListener('click', closeAuth);
 $('auth-switch').addEventListener('click', function(){ openAuth(authMode === 'login' ? 'signup' : 'login'); });
 $('export').addEventListener('click', exportCSV);
 $('reset').addEventListener('click', function(){
-  if (!confirm('清空今天的记录？')) return;
-  state = { date: todayStr(), draws: [] };
-  saveLocal();
-  if (user && cloudReady){ delDay(todayStr()); }
-  renderAll();
+  ask('清空顶部这 6 个位置吗？\n记录页里的历史不会被删除。', function(){
+    state.draws = [];
+    state.cleared = true;
+    saveLocal();
+    renderAll();
+    toast('位置已清空');
+  });
+});
+$('ask-no').addEventListener('click', closeAsk);
+$('ask-yes').addEventListener('click', function(){
+  var f = askCb; closeAsk(); if (f) f();
 });
 $('records').addEventListener('click', function(e){
   var t = e.target;
