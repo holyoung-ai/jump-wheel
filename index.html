@@ -93,6 +93,7 @@ svg{display:block;width:100%;height:100%}
 /* 记录页 */
 .rec-head{width:100%;display:flex;align-items:center;justify-content:space-between;margin-top:8px}
 .rec-head h2{font-size:16px;margin:0;letter-spacing:.08em;color:#5A4335}
+.rec-head .sync{font-size:10.5px;color:var(--muted);margin-left:auto;margin-right:10px;letter-spacing:.04em}
 .rec-head .mini{font-size:11px;color:var(--muted);border:0;background:none;text-decoration:underline;cursor:pointer;font-family:inherit}
 .stats{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .stat{background:#fff;border-radius:14px;padding:10px 6px;text-align:center;box-shadow:0 4px 12px -10px rgba(150,100,60,.8)}
@@ -217,6 +218,7 @@ svg{display:block;width:100%;height:100%}
 <section class="page" id="view-records" hidden>
   <div class="rec-head">
     <h2>我的记录</h2>
+    <span class="sync" id="sync"></span>
     <button class="mini" id="export" type="button">导出 CSV</button>
   </div>
   <div class="stats" id="stats"></div>
@@ -408,6 +410,10 @@ async function pushRecord(rec){
       var saved = res.data[0];
       var cur = state.draws.filter(function(x){ return x.slot === rec.slot; })[0];
       if (cur) { cur.id = saved.id; saveLocal(); }
+      // 同步进本地缓存，记录页立刻能看到
+      records = records.filter(function(r){ return !(r.day === saved.day && r.slot === saved.slot); });
+      records.push(saved);
+      cloudReady = true;
     }
   } catch(e){
     pending.push(row); savePending();
@@ -597,15 +603,27 @@ function confetti(n){
 
 /* ================= 记录页 ================= */
 function allRecords(){
-  // 已登录且有云端数据：用云端；否则用本地今天
-  if (user && cloudReady) return records.slice();
   var d = todayStr();
-  return state.draws.map(function(x){
-    return { id:null, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount };
+  var out = (user && cloudReady) ? records.slice() : [];
+  state.draws.forEach(function(x){
+    if (x.id){
+      var has = out.some(function(r){ return r.id === x.id; });
+      if (!has) out.push({ id:x.id, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount });
+    } else {
+      var dup = out.some(function(r){ return r.day === d && r.slot === x.slot; });
+      if (!dup) out.push({ id:null, local:true, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount });
+    }
   });
+  return out;
 }
 
 function renderRecords(){
+  var syncEl = $('sync');
+  if (syncEl){
+    if (!user) syncEl.textContent = '仅本机';
+    else if (!cloudReady) syncEl.textContent = '离线 · 待传 ' + pending.length;
+    else syncEl.textContent = pending.length ? ('待同步 ' + pending.length) : '已连接云端';
+  }
   var list = $('records');
   var st = $('stats');
   if (!user){
@@ -663,7 +681,8 @@ function renderDays(rs){
     var chips = arr.map(function(r){
       var seg = SEG[r.task_id] || SEG[0];
       return '<span class="rc"><i style="background:' + seg.color + '">' + '</i>' + r.task_label +
-             (r.id ? '<button type="button" data-del="' + r.id + '" title="删除这条">×</button>' : '') + '</span>';
+             '<button type="button" data-del="' + (r.id || '') + '" data-day="' + r.day + '" data-slot="' + r.slot + '" title="删除这条">×</button>' +
+             '</span>';
     }).join('');
     return '<div class="day"><div class="day__top">' +
       '<span class="day__date">' + (d.getMonth()+1) + '月' + d.getDate() + '日 周' + wk + '</span>' +
@@ -758,9 +777,21 @@ $('ask-yes').addEventListener('click', function(){
 });
 $('records').addEventListener('click', function(e){
   var t = e.target;
-  if (t.dataset.del){ delRecord(t.dataset.del); }
-  else if (t.dataset.day){ delDay(t.dataset.day); }
+  if (t.dataset && t.dataset.del !== undefined && t.dataset.del !== '' && t.tagName === 'BUTTON'){
+    delRecord(t.dataset.del);
+  } else if (t.dataset && t.dataset.del === '' && t.dataset.slot){
+    removeLocal(t.dataset.day, parseInt(t.dataset.slot, 10));
+  } else if (t.dataset && t.dataset.day && t.classList.contains('day__del')){
+    delDay(t.dataset.day);
+  }
 });
+
+function removeLocal(day, slot){
+  ask('删除这一条记录？', function(){
+    state.draws = state.draws.filter(function(x){ return x.slot !== slot; });
+    saveLocal(); renderAll(); toast('已删除');
+  });
+}
 $('auth-pwd').addEventListener('keydown', function(e){ if (e.key === 'Enter') doAuth(); });
 document.addEventListener('keydown', function(e){
   if (e.code === 'Space' && $('result').hidden && $('auth').hidden && !$('view-wheel').hidden){
