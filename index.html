@@ -7,9 +7,8 @@
 <title>跳绳大转盘 · 每天六组</title>
 <style>
 :root{
-  --cream:#FFF7EC; --ink:#4A3B33; --ink2:#7A6558;
-  --coral:#FF9E8E; --sun:#FFD36B; --mint:#8FE0BE;
-  --sky:#8FCBF2; --lilac:#C9B0F0; --peach:#FFC08A;
+  --cream:#FFF7EC; --ink:#4A3B33; --ink2:#7A6558; --muted:#A08C7C;
+  --coral:#FF9E8E; --sun:#FFD36B; --mint:#8FE0BE; --sky:#8FCBF2; --lilac:#C9B0F0; --peach:#FFC08A;
   --round:"Yuanti SC","Hiragino Sans GB","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -17,99 +16,147 @@ html,body{margin:0;min-height:100%}
 body{
   background:radial-gradient(120% 90% at 50% 0%,#FFFDF8 0%,var(--cream) 55%,#FFEFD9 100%);
   color:var(--ink); font-family:var(--round); overflow-x:hidden;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:20px 16px 24px; position:relative;
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 14px 26px; position:relative; min-height:100vh;
 }
-
 .bg{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-.bg i{position:absolute;display:block;border-radius:50%;background:#fff;opacity:.75;filter:blur(.3px)}
-.cloud1{width:120px;height:44px;top:9%;left:-30px;box-shadow:34px 6px 0 -6px #fff,66px -8px 0 -10px #fff;animation:float 9s ease-in-out infinite}
-.cloud2{width:86px;height:32px;top:22%;right:-24px;box-shadow:26px 4px 0 -4px #fff;animation:float 11s ease-in-out infinite reverse}
-.star{position:absolute;background:none!important;font-size:14px;opacity:.5}
+.bg i{position:absolute;display:block;border-radius:50%;background:#fff;opacity:.7}
+.cloud1{width:120px;height:44px;top:12%;left:-30px;box-shadow:34px 6px 0 -6px #fff,66px -8px 0 -10px #fff;animation:float 9s ease-in-out infinite}
+.cloud2{width:86px;height:32px;top:26%;right:-24px;box-shadow:26px 4px 0 -4px #fff;animation:float 11s ease-in-out infinite reverse}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
-header{position:relative;z-index:2;text-align:center}
-.mascot{font-size:30px;line-height:1;animation:hop 1.6s ease-in-out infinite}
-@keyframes hop{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
-h1{font-size:25px;margin:4px 0 3px;letter-spacing:.08em;color:#5A4335;text-shadow:0 2px 0 #fff}
-.sub{font-size:12.5px;color:var(--ink2);letter-spacing:.1em;margin:0}
+/* 顶栏 */
+.bar{position:relative;z-index:5;width:100%;max-width:520px;display:flex;align-items:center;gap:8px;padding:12px 0 6px}
+.bar .brand{font-size:15px;font-weight:800;letter-spacing:.06em;color:#5A4335;white-space:nowrap}
+.bar .tabs{display:flex;gap:4px;background:#fff;border-radius:20px;padding:3px;margin-left:6px}
+.tab{border:0;background:transparent;font-family:inherit;font-size:12.5px;padding:6px 12px;border-radius:16px;color:#8A7264;cursor:pointer;font-weight:700}
+.tab.on{background:#FFE7DA;color:#C9573A}
+.acct{margin-left:auto;border:0;background:#fff;border-radius:16px;padding:7px 12px;font-family:inherit;font-size:12px;
+  color:#7A6558;cursor:pointer;box-shadow:0 3px 10px -6px rgba(150,100,60,.6);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.acct.on{background:#EAF6EF;color:#3F6B4A}
 
-/* 今日进度 */
-.today{position:relative;z-index:2;margin-top:14px;display:flex;align-items:center;gap:10px;
-  background:#fff;border-radius:26px;padding:7px 14px;box-shadow:0 6px 16px -10px rgba(160,110,70,.55)}
-.today .lbl{font-size:11px;letter-spacing:.14em;color:#A08C7C}
-.slots{display:flex;gap:6px}
-.slot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
-  font-size:9.5px;font-weight:800;letter-spacing:0;border:2px dashed #EADCCB;color:#C7B6A4;
-  transition:all .3s cubic-bezier(.2,1.4,.4,1)}
-.slot.filled{border:2px solid transparent;color:#4A3B33;transform:scale(1.04)}
+/* 页面容器 */
+.page{position:relative;z-index:2;width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center}
+.page[hidden]{display:none}
+
+/* 头部 */
+.head{text-align:center;margin-top:2px}
+.mascot{font-size:28px;line-height:1;animation:hop 1.6s ease-in-out infinite}
+@keyframes hop{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
+h1{font-size:24px;margin:4px 0 2px;letter-spacing:.08em;color:#5A4335;text-shadow:0 2px 0 #fff}
+.sub{font-size:12px;color:var(--ink2);letter-spacing:.08em;margin:0}
+
+/* 进度 */
+.today{margin-top:12px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:26px;padding:7px 12px;
+  box-shadow:0 6px 16px -10px rgba(160,110,70,.55)}
+.today .lbl{font-size:10.5px;letter-spacing:.12em;color:var(--muted)}
+.slots{display:flex;gap:5px}
+.slot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:800;
+  border:2px dashed #EADCCB;color:#C7B6A4;transition:all .3s cubic-bezier(.2,1.4,.4,1)}
+.slot.filled{border:2px solid transparent;color:#4A3B33;transform:scale(1.03)}
 .slot.now{border:2px solid #FFB59A;color:#E2653F;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,150,120,.5)}50%{box-shadow:0 0 0 7px rgba(255,150,120,0)}}
-.today .cnt{font-size:12px;font-weight:800;color:#E2653F;letter-spacing:.04em}
+.today .cnt{font-size:11.5px;font-weight:800;color:#E2653F}
 
-/* 完成横幅 */
-.done{position:relative;z-index:2;margin-top:12px;background:#FFF3E0;border:2px dashed #FFC59E;
-  border-radius:18px;padding:12px 16px;text-align:center;font-size:13px;color:#8A5A3E;line-height:1.7}
-.done b{color:#E2653F;font-size:15px}
+.done{margin-top:10px;background:#FFF3E0;border:2px dashed #FFC59E;border-radius:16px;padding:10px 14px;
+  text-align:center;font-size:12.5px;color:#8A5A3E;line-height:1.7;max-width:420px}
+.done b{color:#E2653F}
 .done[hidden]{display:none}
 
 /* 转盘 */
-.stage{position:relative;z-index:2;margin-top:22px;width:min(86vw,350px);aspect-ratio:1/1;display:grid;place-items:center}
-.pointer{position:absolute;top:-26px;left:50%;transform:translateX(-50%);z-index:6;width:44px;height:56px;
+.stage{position:relative;margin-top:18px;width:min(84vw,330px);aspect-ratio:1/1;display:grid;place-items:center}
+.pointer{position:absolute;top:-24px;left:50%;transform:translateX(-50%);z-index:6;width:40px;height:52px;
   filter:drop-shadow(0 6px 8px rgba(190,100,70,.35));transform-origin:50% 10%}
 .pointer svg{width:100%;height:100%;display:block}
 .pointer.tap{animation:tap .45s cubic-bezier(.3,1.6,.5,1)}
 @keyframes tap{0%{transform:translateX(-50%) rotate(0)}30%{transform:translateX(-50%) rotate(-14deg)}100%{transform:translateX(-50%) rotate(0)}}
-
 .wheel{width:100%;height:100%;transition:transform 4.9s cubic-bezier(.12,.86,.12,1);will-change:transform;
   filter:drop-shadow(0 14px 26px rgba(150,100,60,.28))}
 svg{display:block;width:100%;height:100%}
-
 .spin{position:absolute;z-index:5;width:27%;aspect-ratio:1/1;border-radius:50%;border:0;cursor:pointer;
   background:linear-gradient(180deg,#FFFFFF,#FFF3E2);
   box-shadow:0 0 0 6px #fff,0 0 0 9px #FFD9C4,0 10px 20px -6px rgba(180,110,70,.45);
-  font-family:var(--round);font-size:19px;font-weight:800;color:#E2653F;letter-spacing:.08em;
-  transition:transform .15s;line-height:1.15}
+  font-family:var(--round);font-size:18px;font-weight:800;color:#E2653F;letter-spacing:.06em;line-height:1.15}
 .spin:active{transform:scale(.94)}
-.spin span{display:block;font-size:9.5px;letter-spacing:.1em;color:#B98A6E;margin-top:3px;font-weight:700}
+.spin span{display:block;font-size:9px;letter-spacing:.08em;color:#B98A6E;margin-top:3px;font-weight:700}
 .spin[disabled]{cursor:default;color:#C0AA99}
 .spin[disabled] span{color:#C0AA99}
 
-.legend{position:relative;z-index:2;display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:18px;max-width:400px}
-.chip{display:flex;align-items:center;gap:5px;font-size:12px;padding:5px 10px;border-radius:20px;
-  background:#fff;box-shadow:0 3px 10px -6px rgba(150,100,60,.6);color:#5A4B42}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:16px;max-width:420px}
+.chip{display:flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 9px;border-radius:20px;background:#fff;
+  box-shadow:0 3px 10px -6px rgba(150,100,60,.6);color:#5A4B42}
 .chip i{width:8px;height:8px;border-radius:50%;display:block}
 
-footer{position:relative;z-index:2;margin-top:20px;font-size:11px;color:#A08C7C;letter-spacing:.08em;text-align:center;line-height:1.9}
-footer button{background:none;border:0;color:#B9A491;font-size:10.5px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:2px 6px}
+.footline{margin-top:16px;font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-align:center;line-height:1.9}
+.footline button{background:none;border:0;color:#B9A491;font-size:10px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:2px 6px}
 
-/* 结果弹层 */
-.result{position:fixed;inset:0;z-index:20;background:rgba(60,42,32,.42);backdrop-filter:blur(3px);
-  display:grid;place-items:center;padding:22px;animation:fade .25s ease both}
-.result[hidden]{display:none}
+/* 记录页 */
+.rec-head{width:100%;display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.rec-head h2{font-size:16px;margin:0;letter-spacing:.08em;color:#5A4335}
+.rec-head .mini{font-size:11px;color:var(--muted);border:0;background:none;text-decoration:underline;cursor:pointer;font-family:inherit}
+.stats{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{background:#fff;border-radius:14px;padding:10px 6px;text-align:center;box-shadow:0 4px 12px -10px rgba(150,100,60,.8)}
+.stat b{display:block;font-size:17px;color:#E2653F;font-weight:900;line-height:1.3}
+.stat span{font-size:10px;color:var(--muted);letter-spacing:.06em}
+.day{width:100%;background:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;box-shadow:0 4px 14px -12px rgba(150,100,60,.9)}
+.day__top{display:flex;align-items:baseline;gap:8px}
+.day__date{font-size:14px;font-weight:800;color:#5A4335}
+.day__sum{margin-left:auto;font-size:11px;color:var(--muted)}
+.day__del{border:0;background:none;color:#C7B6A4;font-size:11px;cursor:pointer;font-family:inherit;padding:2px 4px}
+.day__chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.rc{display:flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 6px 4px 8px;border-radius:14px;background:#FBF6EE;color:#5A4B42}
+.rc i{width:8px;height:8px;border-radius:50%}
+.rc button{border:0;background:none;color:#C7B6A4;font-size:12px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
+#records{width:100%}
+.empty{width:100%;text-align:center;color:var(--muted);font-size:12.5px;line-height:2;padding:28px 10px}
+.login-tip{width:100%;background:#FFF3E0;border-radius:14px;padding:12px 14px;font-size:12px;color:#8A5A3E;margin-top:12px;line-height:1.8}
+.login-tip button{border:0;background:#E2653F;color:#fff;border-radius:12px;padding:7px 14px;font-family:inherit;font-size:12px;font-weight:800;margin-top:8px;cursor:pointer}
+
+/* 弹层通用 */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(60,42,32,.52);backdrop-filter:blur(4px);
+  display:grid;place-items:center;padding:20px;animation:fade .2s ease both}
+.modal[hidden]{display:none}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-.card{width:min(92vw,340px);background:#FFFCF6;border-radius:26px;padding:24px 22px 20px;text-align:center;
-  box-shadow:0 24px 60px -20px rgba(80,50,30,.55);animation:pop .45s cubic-bezier(.2,1.5,.4,1) both;
-  position:relative;overflow:hidden}
-@keyframes pop{from{transform:scale(.7) translateY(10px);opacity:0}to{transform:none;opacity:1}}
-.card::before{content:"";position:absolute;top:-40px;left:-40px;width:120px;height:120px;border-radius:50%;background:#FFF0D8}
-.card .round{font-size:11px;letter-spacing:.2em;color:#B08A6E;position:relative}
-.card .em{font-size:44px;position:relative;animation:hop 1.4s ease-in-out infinite;margin-top:2px}
-.card .task{font-size:33px;font-weight:900;color:#E2653F;letter-spacing:.06em;line-height:1.2;position:relative;margin-top:4px}
-.card .tip{font-size:13px;color:#7A6558;margin:10px 0 18px;line-height:1.7;min-height:22px;position:relative}
-.card .btn{width:100%;border:0;border-radius:16px;padding:14px 8px;font-family:var(--round);font-size:16px;
-  font-weight:800;cursor:pointer;letter-spacing:.06em;transition:transform .12s;
-  background:linear-gradient(180deg,#FF9E8E,#FF7E6B);color:#fff;box-shadow:0 8px 18px -8px rgba(230,100,70,.9)}
-.card .btn:active{transform:scale(.97)}
+.sheet{width:min(92vw,340px);background:#FFFCF6;border-radius:24px;padding:22px 20px 18px;
+  box-shadow:0 24px 60px -20px rgba(80,50,30,.55);animation:pop .35s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.sheet h2{font-size:19px;margin:0 0 4px;letter-spacing:.06em;color:#5A4335}
+.sheet .hint{font-size:11.5px;color:var(--muted);margin:0 0 14px;line-height:1.7}
+.sheet input{width:100%;padding:12px 13px;border:1.5px solid #EADCCB;border-radius:12px;font-family:inherit;
+  font-size:14px;margin-bottom:9px;background:#fff;color:var(--ink);outline:none}
+.sheet input:focus{border-color:#FFB59A}
+.sheet .go{width:100%;border:0;border-radius:14px;padding:13px;font-family:inherit;font-size:15px;font-weight:800;
+  background:linear-gradient(180deg,#FF9E8E,#FF7E6B);color:#fff;cursor:pointer;margin-top:4px;
+  box-shadow:0 8px 18px -8px rgba(230,100,70,.9)}
+.sheet .go:disabled{opacity:.6}
+.sheet .link{display:block;width:100%;border:0;background:none;color:#B08A6E;font-size:12px;margin-top:11px;
+  cursor:pointer;font-family:inherit;text-decoration:underline}
+.sheet .err{color:#D0523A;font-size:11.5px;min-height:16px;margin:8px 0 0;text-align:center;line-height:1.5}
+
+/* 结果卡 */
+.card{width:min(92vw,330px);background:#FFFCF6;border-radius:24px;padding:22px 20px 18px;text-align:center;
+  box-shadow:0 24px 60px -20px rgba(80,50,30,.55);animation:pop .35s cubic-bezier(.2,1.5,.4,1) both;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;top:-40px;left:-40px;width:110px;height:110px;border-radius:50%;background:#FFF0D8}
+.card .round{font-size:10.5px;letter-spacing:.18em;color:#B08A6E;position:relative}
+.card .em{font-size:40px;position:relative;animation:hop 1.4s ease-in-out infinite;margin-top:2px}
+.card .task{font-size:31px;font-weight:900;color:#E2653F;letter-spacing:.04em;line-height:1.2;position:relative;margin-top:2px}
+.card .tip{font-size:12.5px;color:#7A6558;margin:8px 0 16px;line-height:1.7;min-height:20px;position:relative}
+.card .btn{width:100%;border:0;border-radius:14px;padding:13px;font-family:inherit;font-size:15px;font-weight:800;
+  cursor:pointer;background:linear-gradient(180deg,#FF9E8E,#FF7E6B);color:#fff;box-shadow:0 8px 18px -8px rgba(230,100,70,.9)}
 
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
-.confetti i{position:absolute;width:9px;height:13px;border-radius:2px;opacity:.95;animation:fall linear forwards}
+.confetti i{position:absolute;width:8px;height:12px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.2}}
 
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,10px);background:rgba(60,42,32,.9);color:#fff;
+  font-size:12px;padding:9px 16px;border-radius:20px;opacity:0;transition:.25s;z-index:40;pointer-events:none;max-width:80vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
 @media (max-width:360px){
-  h1{font-size:22px}
-  .slot{width:30px;height:30px;font-size:9.5px}
-  .chip{font-size:11px;padding:4px 8px}
+  h1{font-size:21px}
+  .slot{width:28px;height:28px;font-size:8px}
+  .chip{font-size:10.5px;padding:4px 7px}
+  .bar .brand{font-size:13px}
 }
 @media (prefers-reduced-motion:reduce){
   .wheel{transition-duration:1.2s!important}
@@ -118,260 +165,592 @@ footer button{background:none;border:0;color:#B9A491;font-size:10.5px;text-decor
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><i class="cloud1"></i><i class="cloud2"></i></div>
 
-<div class="bg" aria-hidden="true">
-  <i class="cloud1"></i><i class="cloud2"></i>
-  <span class="star" style="top:30%;left:8%">✦</span>
-  <span class="star" style="top:16%;right:12%">✧</span>
-  <span class="star" style="top:64%;left:14%">✦</span>
-  <span class="star" style="top:74%;right:9%">✧</span>
-</div>
-
-<header>
-  <div class="mascot">🐱</div>
-  <h1>跳绳大转盘</h1>
-  <p class="sub">今天跳 6 组，每组转一次</p>
-</header>
-
-<div class="today">
-  <span class="lbl">今天</span>
-  <div class="slots" id="slots"></div>
-  <span class="cnt" id="cnt">0 / 6</span>
-</div>
-
-<div class="done" id="done" hidden></div>
-
-<div class="stage">
-  <div class="pointer" id="pointer" aria-hidden="true">
-    <svg viewBox="0 0 44 56" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22 4 C 12 4 5 11 5 21 C 5 33 22 52 22 52 C 22 52 39 33 39 21 C 39 11 32 4 22 4 Z" fill="#FF8B76" stroke="#FFFFFF" stroke-width="5"/>
-      <circle cx="22" cy="21" r="6.5" fill="#FFFFFF" opacity=".95"/>
-    </svg>
+<div class="bar">
+  <span class="brand">🐰 跳绳</span>
+  <div class="tabs">
+    <button class="tab on" data-view="wheel" type="button">转盘</button>
+    <button class="tab" data-view="records" type="button">记录</button>
   </div>
-  <div class="wheel" id="wheel"></div>
-  <button class="spin" id="spin" type="button">转！<span id="spin-sub">第 1 组</span></button>
+  <button class="acct" id="acct" type="button">登录</button>
 </div>
 
-<div class="legend" id="legend"></div>
+<!-- 转盘页 -->
+<section class="page" id="view-wheel">
+  <div class="head">
+    <div class="mascot">🐰</div>
+    <h1>跳绳大转盘</h1>
+    <p class="sub">今天跳 6 组，每组转一次</p>
+  </div>
 
-<footer>
-  一天 6 组，转完就跳 · 谁耍赖谁小狗<br>
-  <button type="button" id="reset">清空今天（家长用）</button>
-</footer>
+  <div class="today">
+    <span class="lbl">今天</span>
+    <div class="slots" id="slots"></div>
+    <span class="cnt" id="cnt">0 / 6</span>
+  </div>
 
-<div class="result" id="result" hidden>
+  <div class="done" id="done" hidden></div>
+
+  <div class="stage">
+    <div class="pointer" id="pointer" aria-hidden="true">
+      <svg viewBox="0 0 44 56" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 4 C 12 4 5 11 5 21 C 5 33 22 52 22 52 C 22 52 39 33 39 21 C 39 11 32 4 22 4 Z" fill="#FF8B76" stroke="#FFFFFF" stroke-width="5"/>
+        <circle cx="22" cy="21" r="6.5" fill="#FFFFFF" opacity=".95"/>
+      </svg>
+    </div>
+    <div class="wheel" id="wheel"></div>
+    <button class="spin" id="spin" type="button">转！<span id="spin-sub">第 1 组</span></button>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="footline">
+    一天 6 组，转完就跳 · 不许耍赖哦<br>
+    <button type="button" id="reset">清空今天</button>
+  </div>
+</section>
+
+<!-- 记录页 -->
+<section class="page" id="view-records" hidden>
+  <div class="rec-head">
+    <h2>我的记录</h2>
+    <button class="mini" id="export" type="button">导出 CSV</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="records"></div>
+</section>
+
+<!-- 登录 -->
+<div class="modal" id="auth" hidden>
+  <div class="sheet">
+    <h2 id="auth-title">登录</h2>
+    <p class="hint" id="auth-hint">登录后记录保存到云端，换手机也能看到。</p>
+    <input id="auth-email" type="email" inputmode="email" autocomplete="email" placeholder="邮箱">
+    <input id="auth-pwd" type="password" autocomplete="current-password" placeholder="密码（至少 6 位）">
+    <button class="go" id="auth-go" type="button">登录</button>
+    <button class="link" id="auth-switch" type="button">没有账号？去注册</button>
+    <button class="link" id="auth-close" type="button">先不登录，随便用用</button>
+    <p class="err" id="auth-err"></p>
+  </div>
+</div>
+
+<!-- 中奖 -->
+<div class="modal" id="result" hidden>
   <div class="card">
     <div class="round" id="r-round">第 1 组</div>
     <div class="em" id="r-em">💪</div>
     <div class="task" id="r-task">跳 100 个</div>
-    <div class="tip" id="r-tip">小猫咪说：你可以的！</div>
+    <div class="tip" id="r-tip">小兔子说：你可以的！</div>
     <button class="btn" id="r-go" type="button">去跳！</button>
   </div>
 </div>
 
 <div class="confetti" id="confetti" aria-hidden="true"></div>
+<div class="toast" id="toast"></div>
 
+<script src="./vendor/supabase.js"></script>
 <script>
-/* ---------------- 六个选项 ---------------- */
+/* ================= 配置 ================= */
+var SB_URL = 'https://shgbzrvupyzomrcwqrzn.supabase.co';
+var SB_KEY = 'sb_publishable_nv6ShUt5NlXgFQVe39P7OQ_XV5xlGnM';
+var sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+
 var SEG = [
-  { task:'跳 100 个', short:'100', face:'100 个', color:'#FF9E8E', em:'💪', kind:'count', n:100,
-    tips:['小猫咪说：你可以的！','稳稳地跳，一下就过去了。'] },
-  { task:'跳 120 个', short:'120', face:'120 个', color:'#FFD36B', em:'⚡', kind:'count', n:120,
+  { task:'跳 100 个', short:'100', face:'100 个', color:'#FF9E8E', em:'💪', kind:'count', amount:100,
+    tips:['小兔子说：你可以的！','稳稳地跳，一下就过去了。'] },
+  { task:'跳 120 个', short:'120', face:'120 个', color:'#FFD36B', em:'⚡', kind:'count', amount:120,
     tips:['今天的你有点猛！','分成 60 + 60 也行哦。'] },
-  { task:'跳 80 个', short:'80', face:'80 个', color:'#8FE0BE', em:'🌿', kind:'count', n:80,
+  { task:'跳 80 个', short:'80', face:'80 个', color:'#8FE0BE', em:'🌿', kind:'count', amount:80,
     tips:['轻松局，热热身。','跳完记得喝口水。'] },
-  { task:'跳 45 秒', short:'45秒', face:'45 秒', color:'#8FCBF2', em:'⏱', kind:'time', s:45,
+  { task:'跳 45 秒', short:'45秒', face:'45 秒', color:'#8FCBF2', em:'⏱', kind:'time', amount:45,
     tips:['争分夺秒，加油！','数一数这 45 秒你能跳几个？'] },
-  { task:'跳 50 秒', short:'50秒', face:'50 秒', color:'#C9B0F0', em:'🎵', kind:'time', s:50,
+  { task:'跳 50 秒', short:'50秒', face:'50 秒', color:'#C9B0F0', em:'🎵', kind:'time', amount:50,
     tips:['跟着节奏，一下一下。','慢一点也完全没问题。'] },
-  { task:'50 + 50 个', short:'50+50', face:'50+50', color:'#FFC08A', em:'🔁', kind:'count', n:100,
+  { task:'50 + 50 个', short:'50+50', face:'50+50', color:'#FFC08A', em:'🔁', kind:'count', amount:100,
     tips:['分两组，中间歇 30 秒。','两口气跳完，很棒！'] }
 ];
 var PER_DAY = 6;
 
-/* ---------------- 画转盘 ---------------- */
-var wheel = document.getElementById('wheel');
-var R = 168, C = 180, N = SEG.length, STEP = 360 / N;
+/* ================= 工具 ================= */
+function $(id){ return document.getElementById(id); }
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+function todayStr(d){ d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function toast(msg){
+  var t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2200);
+}
+function vibrate(){ try { if (navigator.vibrate) navigator.vibrate([12, 60, 22]); } catch(e){} }
 
+/* ================= 画转盘 ================= */
+var wheel = $('wheel');
+var RAD = 168, CEN = 180, N = SEG.length, STEP = 360 / N;
 function polar(a, r){
   var rad = (a - 90) * Math.PI / 180;
-  return [C + r * Math.cos(rad), C + r * Math.sin(rad)];
+  return [CEN + r * Math.cos(rad), CEN + r * Math.sin(rad)];
 }
 function sectorPath(i){
-  var a0 = i * STEP, a1 = a0 + STEP;
-  var p0 = polar(a0, R), p1 = polar(a1, R);
-  return 'M' + C + ' ' + C + ' L' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) +
-         ' A' + R + ' ' + R + ' 0 0 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + ' Z';
+  var p0 = polar(i*STEP, RAD), p1 = polar((i+1)*STEP, RAD);
+  return 'M' + CEN + ' ' + CEN + ' L' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) +
+         ' A' + RAD + ' ' + RAD + ' 0 0 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + ' Z';
 }
+(function drawWheel(){
+  var s = '<svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">';
+  s += '<circle cx="180" cy="180" r="174" fill="#FFFFFF"/>';
+  s += '<circle cx="180" cy="180" r="174" fill="none" stroke="#FFD9C4" stroke-width="6"/>';
+  SEG.forEach(function(x, i){ s += '<path d="' + sectorPath(i) + '" fill="' + x.color + '" stroke="#FFFFFF" stroke-width="3"/>'; });
+  SEG.forEach(function(x, i){
+    var pt = polar(i*STEP + STEP/2, RAD*0.63);
+    var fs = x.face.length >= 5 ? 16 : 19;
+    s += '<g transform="translate(' + pt[0].toFixed(1) + ',' + pt[1].toFixed(1) + ')">' +
+         '<text x="0" y="6" text-anchor="middle" font-family="inherit" font-size="' + fs + '" font-weight="800" fill="#4A3B33">' + x.face + '</text></g>';
+  });
+  s += '<circle cx="180" cy="180" r="46" fill="#FFFFFF" opacity=".92"/></svg>';
+  wheel.innerHTML = s;
+  $('legend').innerHTML = SEG.map(function(x){
+    return '<span class="chip"><i style="background:' + x.color + '"></i>' + x.task + '</span>';
+  }).join('');
+})();
 
-var svg = '<svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">';
-svg += '<circle cx="180" cy="180" r="174" fill="#FFFFFF"/>';
-svg += '<circle cx="180" cy="180" r="174" fill="none" stroke="#FFD9C4" stroke-width="6"/>';
-SEG.forEach(function(s, i){
-  svg += '<path d="' + sectorPath(i) + '" fill="' + s.color + '" stroke="#FFFFFF" stroke-width="3"/>';
-});
-SEG.forEach(function(s, i){
-  var mid = i * STEP + STEP / 2;
-  var pt = polar(mid, R * 0.63);
-  var fs = (s.face.length >= 5 ? 16 : 19);
-  svg += '<g transform="translate(' + pt[0].toFixed(1) + ',' + pt[1].toFixed(1) + ')">' +
-         '<text x="0" y="6" text-anchor="middle" font-family="inherit" font-size="' + fs + '" font-weight="800" fill="#4A3B33">' + s.face + '</text>' +
-         '</g>';
-});
-svg += '<circle cx="180" cy="180" r="46" fill="#FFFFFF" opacity=".92"/></svg>';
-wheel.innerHTML = svg;
+/* ================= 本地状态 ================= */
+var LKEY = 'jump-wheel-day-v2';
+var state = { date: todayStr(), draws: [] };
 
-document.getElementById('legend').innerHTML = SEG.map(function(s){
-  return '<span class="chip"><i style="background:' + s.color + '"></i>' + s.task + '</span>';
-}).join('');
-
-/* ---------------- 今日状态 ---------------- */
-var KEY = 'jump-wheel-day-v1';
-function todayKey(){
-  var d = new Date();
-  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
-}
-var state = { date: todayKey(), draws: [] };
-
-function load(){
+function loadLocal(){
   try {
-    var raw = localStorage.getItem(KEY);
-    if (raw) {
+    var raw = localStorage.getItem(LKEY);
+    if (raw){
       var o = JSON.parse(raw);
-      if (o && o.date === todayKey() && Array.isArray(o.draws)) state = o;
+      if (o && o.date === todayStr() && Array.isArray(o.draws)) state = o;
     }
   } catch(e){}
 }
-function save(){
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+function saveLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(state)); } catch(e){} }
+
+/* ================= 账号 ================= */
+var user = null;
+var records = [];          // 云端记录
+var cloudReady = false;    // 是否成功拉取过
+var pending = [];          // 待同步队列
+
+function loadPending(){ try { pending = JSON.parse(localStorage.getItem('jw-pending') || '[]'); } catch(e){ pending = []; } }
+function savePending(){ try { localStorage.setItem('jw-pending', JSON.stringify(pending)); } catch(e){} }
+
+function renderBar(){
+  var b = $('acct');
+  if (user){ b.textContent = user.email.split('@')[0]; b.classList.add('on'); b.title = user.email; }
+  else { b.textContent = '登录'; b.classList.remove('on'); b.title = ''; }
 }
 
-var slotsEl = document.getElementById('slots');
-var cntEl = document.getElementById('cnt');
-var spinBtn = document.getElementById('spin');
-var spinSub = document.getElementById('spin-sub');
-var pointer = document.getElementById('pointer');
-var result = document.getElementById('result');
-var doneEl = document.getElementById('done');
+/* 拉取云端记录 */
+async function pullRecords(){
+  if (!user) return;
+  try {
+    var res = await sb.from('records').select('*')
+      .is('deleted_at', null)
+      .order('day', { ascending:false }).order('slot', { ascending:true })
+      .limit(1000);
+    if (res.error) throw res.error;
+    records = res.data || [];
+    cloudReady = true;
+    mergeTodayFromCloud();
+    renderAll();
+  } catch(e){
+    cloudReady = false;
+    console.warn('拉取失败', e);
+  }
+}
 
+/* 把云端今天的记录并进本地今日状态 */
+function mergeTodayFromCloud(){
+  var d = todayStr();
+  var map = {};
+  state.draws.forEach(function(x){ map[x.slot] = x; });
+  records.forEach(function(r){
+    if (r.day !== d) return;
+    var s = SEG[r.task_id] || SEG[0];
+    map[r.slot] = { slot:r.slot, idx:r.task_id, short:s.short, task:r.task_label,
+                    color:s.color, kind:r.kind, amount:r.amount, id:r.id };
+  });
+  state.draws = Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,b){ return a.slot - b.slot; });
+  saveLocal();
+}
+
+/* 单条上云 */
+async function pushRecord(rec){
+  if (!user){ return; }
+  var row = { user_id: user.id, day: rec.day, slot: rec.slot, task_id: rec.idx,
+              task_label: rec.task, kind: rec.kind, amount: rec.amount };
+  try {
+    var res = await sb.from('records').upsert(row, { onConflict:'user_id,day,slot' }).select();
+    if (res.error) throw res.error;
+    if (res.data && res.data[0]) {
+      var saved = res.data[0];
+      var cur = state.draws.filter(function(x){ return x.slot === rec.slot; })[0];
+      if (cur) { cur.id = saved.id; saveLocal(); }
+    }
+  } catch(e){
+    pending.push(row); savePending();
+    toast('离线，稍后自动同步');
+  }
+}
+
+async function flushPending(){
+  if (!user || !pending.length) return;
+  var left = [];
+  for (var i = 0; i < pending.length; i++){
+    try {
+      var res = await sb.from('records').upsert(pending[i], { onConflict:'user_id,day,slot' });
+      if (res.error) throw res.error;
+    } catch(e){ left.push(pending[i]); }
+  }
+  pending = left; savePending();
+  if (!left.length) toast('已同步');
+}
+
+/* 登录 / 注册 */
+var authMode = 'login';
+function openAuth(mode){
+  authMode = mode || 'login';
+  $('auth-title').textContent = authMode === 'login' ? '登录' : '注册';
+  $('auth-go').textContent = authMode === 'login' ? '登录' : '注册';
+  $('auth-switch').textContent = authMode === 'login' ? '没有账号？去注册' : '已有账号？去登录';
+  $('auth-err').textContent = '';
+  $('auth').hidden = false;
+  setTimeout(function(){ $('auth-email').focus(); }, 120);
+}
+function closeAuth(){ $('auth').hidden = true; }
+
+async function doAuth(){
+  var email = $('auth-email').value.trim();
+  var pwd = $('auth-pwd').value;
+  var err = $('auth-err');
+  err.textContent = '';
+  if (!email || email.indexOf('@') < 0) { err.textContent = '请填写正确的邮箱'; return; }
+  if (pwd.length < 6) { err.textContent = '密码至少 6 位'; return; }
+  $('auth-go').disabled = true;
+  try {
+    if (authMode === 'login'){
+      var r = await sb.auth.signInWithPassword({ email: email, password: pwd });
+      if (r.error) throw r.error;
+    } else {
+      var r2 = await sb.auth.signUp({ email: email, password: pwd });
+      if (r2.error) throw r2.error;
+      if (!r2.data.session){
+        err.textContent = '注册成功，请到邮箱点确认链接后再登录';
+        $('auth-go').disabled = false;
+        return;
+      }
+    }
+    closeAuth();
+  } catch(e){
+    var m = e.message || '';
+    if (/Invalid login credentials/i.test(m)) m = '邮箱或密码不对';
+    else if (/already registered/i.test(m)) m = '这个邮箱已注册，请直接登录';
+    else if (/Email not confirmed/i.test(m)) m = '邮箱还没确认，请去邮箱点确认链接';
+    err.textContent = m;
+  }
+  $('auth-go').disabled = false;
+}
+
+async function afterLogin(){
+  await pullRecords();
+  await flushPending();
+  // 把今天本地的记录补传上去
+  for (var i = 0; i < state.draws.length; i++){
+    var d = state.draws[i];
+    if (!d.id) await pushRecord({ day: todayStr(), slot: d.slot, idx: d.idx, task: d.task, kind: d.kind, amount: d.amount });
+  }
+  renderAll();
+}
+
+/* ================= 转盘逻辑 ================= */
+var rot = 0, spinning = false;
 function remaining(){ return PER_DAY - state.draws.length; }
 
-function render(){
-  var left = remaining();
+function renderWheelState(){
   var html = '';
   for (var i = 0; i < PER_DAY; i++){
     var d = state.draws[i];
-    if (d) {
-      html += '<span class="slot filled" style="background:' + d.color + '">' + d.short + '</span>';
-    } else {
-      html += '<span class="slot' + (i === state.draws.length ? ' now' : '') + '">' + (i+1) + '</span>';
-    }
+    if (d) html += '<span class="slot filled" style="background:' + d.color + '">' + d.short + '</span>';
+    else html += '<span class="slot' + (i === state.draws.length ? ' now' : '') + '">' + (i+1) + '</span>';
   }
-  slotsEl.innerHTML = html;
-  cntEl.textContent = state.draws.length + ' / ' + PER_DAY;
+  $('slots').innerHTML = html;
+  $('cnt').textContent = state.draws.length + ' / ' + PER_DAY;
 
+  var left = remaining();
+  var btn = $('spin');
   if (left <= 0){
-    spinBtn.disabled = true;
-    spinBtn.firstChild.nodeValue = '完成 🎉';
-    spinSub.textContent = '明天再来';
-    doneEl.hidden = false;
-    doneEl.innerHTML = summary();
+    btn.disabled = true;
+    btn.firstChild.nodeValue = '完成 🎉';
+    $('spin-sub').textContent = '明天再来';
+    $('done').hidden = false;
+    $('done').innerHTML = summaryToday();
   } else {
-    spinBtn.disabled = false;
-    spinBtn.firstChild.nodeValue = '转！';
-    spinSub.textContent = '第 ' + (state.draws.length + 1) + ' 组';
-    doneEl.hidden = true;
+    btn.disabled = false;
+    btn.firstChild.nodeValue = '转！';
+    $('spin-sub').textContent = '第 ' + (state.draws.length + 1) + ' 组';
+    $('done').hidden = true;
   }
 }
-
-function summary(){
-  var cnt = 0, sec = 0;
-  state.draws.forEach(function(d){ if (d.kind === 'count') cnt += d.n; else sec += d.s; });
+function summaryToday(){
+  var c = 0, s = 0;
+  state.draws.forEach(function(d){ if (d.kind === 'count') c += d.amount; else s += d.amount; });
   var parts = [];
-  if (cnt) parts.push('<b>' + cnt + '</b> 个');
-  if (sec) parts.push('<b>' + sec + '</b> 秒');
-  return '今天的 6 组全部完成啦 🎉<br>一共 ' + parts.join(' ＋ ') + '<br>明天再来转新的！';
+  if (c) parts.push('<b>' + c + '</b> 个');
+  if (s) parts.push('<b>' + s + '</b> 秒');
+  return '今天的 6 组全部完成啦 🎉<br>一共 ' + parts.join(' ＋ ');
 }
-
-/* ---------------- 转动 ---------------- */
-var rot = 0, spinning = false;
 
 function spin(){
   if (spinning || remaining() <= 0) return;
   spinning = true;
-  spinBtn.disabled = true;
+  $('spin').disabled = true;
 
   var idx = Math.floor(Math.random() * N);
-  // 避免连续两次相同，减少“怎么又是它”
   var last = state.draws.length ? state.draws[state.draws.length - 1].idx : -1;
   if (idx === last) idx = (idx + 1 + Math.floor(Math.random() * (N - 1))) % N;
 
   var jitter = (Math.random() * 40 - 20);
-  var targetMod = (360 - (idx * STEP + STEP / 2) + jitter + 360) % 360;
+  var targetMod = (360 - (idx*STEP + STEP/2) + jitter + 360) % 360;
   var delta = ((targetMod - (rot % 360)) + 360) % 360 + 360 * 6;
   rot += delta;
 
-  result.hidden = true;
+  $('result').hidden = true;
   wheel.style.transform = 'rotate(' + rot + 'deg)';
-  pointer.classList.remove('tap');
+  $('pointer').classList.remove('tap');
 
   setTimeout(function(){
     spinning = false;
-    pointer.classList.add('tap');
+    $('pointer').classList.add('tap');
     var s = SEG[idx];
-    state.draws.push({ idx: idx, short: s.short, task: s.task, color: s.color,
-                       kind: s.kind, n: s.n || 0, s: s.s || 0,
-                       at: Date.now() });
-    save();
-    render();
-    showResult(idx);
-    confetti(state.draws.length === PER_DAY ? 70 : 36);
+    var slot = state.draws.length + 1;
+    var rec = { slot: slot, idx: idx, short: s.short, task: s.task, color: s.color,
+                kind: s.kind, amount: s.amount, day: todayStr() };
+    state.draws.push(rec);
+    saveLocal();
+    renderWheelState();
+    showResult(idx, slot);
+    confetti(state.draws.length === PER_DAY ? 70 : 34);
     vibrate();
+    pushRecord(rec);
+    renderRecords();
   }, 5000);
 }
 
-function showResult(i){
+function showResult(i, slot){
   var s = SEG[i];
-  document.getElementById('r-round').textContent = '第 ' + state.draws.length + ' 组 / 共 ' + PER_DAY + ' 组';
-  document.getElementById('r-em').textContent = s.em;
-  document.getElementById('r-task').textContent = s.task;
-  document.getElementById('r-tip').textContent = s.tips[Math.floor(Math.random() * s.tips.length)];
-  document.getElementById('r-go').textContent = state.draws.length === PER_DAY ? '完成今天 🎉' : '去跳！';
-  result.hidden = false;
+  $('r-round').textContent = '第 ' + slot + ' 组 / 共 ' + PER_DAY + ' 组';
+  $('r-em').textContent = s.em;
+  $('r-task').textContent = s.task;
+  $('r-tip').textContent = s.tips[Math.floor(Math.random() * s.tips.length)];
+  $('r-go').textContent = slot === PER_DAY ? '完成今天 🎉' : '去跳！';
+  $('result').hidden = false;
 }
 
 function confetti(n){
-  var box = document.getElementById('confetti');
+  var box = $('confetti');
   var colors = ['#FF9E8E','#FFD36B','#8FE0BE','#8FCBF2','#C9B0F0','#FFC08A'];
   for (var k = 0; k < n; k++){
     var el = document.createElement('i');
-    el.style.left = Math.random() * 100 + 'vw';
+    el.style.left = Math.random()*100 + 'vw';
     el.style.top = '-20px';
     el.style.background = colors[k % colors.length];
-    el.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
-    el.style.animationDelay = (Math.random() * .35) + 's';
-    el.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+    el.style.animationDuration = (1.6 + Math.random()*1.4) + 's';
+    el.style.animationDelay = (Math.random()*0.35) + 's';
+    el.style.transform = 'rotate(' + Math.random()*360 + 'deg)';
     box.appendChild(el);
     setTimeout(function(e){ return function(){ e.remove(); }; }(el), 3400);
   }
 }
-function vibrate(){ try { if (navigator.vibrate) navigator.vibrate([12, 60, 22]); } catch(e){} }
 
-spinBtn.addEventListener('click', spin);
+/* ================= 记录页 ================= */
+function allRecords(){
+  // 已登录且有云端数据：用云端；否则用本地今天
+  if (user && cloudReady) return records.slice();
+  var d = todayStr();
+  return state.draws.map(function(x){
+    return { id:null, day:d, slot:x.slot, task_id:x.idx, task_label:x.task, kind:x.kind, amount:x.amount };
+  });
+}
+
+function renderRecords(){
+  var list = $('records');
+  var st = $('stats');
+  if (!user){
+    st.innerHTML = '';
+    var guestDays = renderDays(allRecords());
+    list.innerHTML = '<div class="login-tip">现在只记在本机，换手机就看不到了。<br>' +
+      '登录后可以保存到云端，随时回看、删除。<br>' +
+      '<button type="button" onclick="openAuth(\'login\')">登录 / 注册</button></div>' +
+      (guestDays || '<div class="empty">今天还没有记录，先去转盘转一组吧</div>');
+    return;
+  }
+
+  var rs = allRecords();
+  var byDay = {};
+  rs.forEach(function(r){ (byDay[r.day] = byDay[r.day] || []).push(r); });
+  var days = Object.keys(byDay).sort().reverse();
+
+  // 统计
+  var totalGroups = rs.length;
+  var totalCount = 0, totalSec = 0;
+  rs.forEach(function(r){ if (r.kind === 'count') totalCount += r.amount; else totalSec += r.amount; });
+  var streak = 0, cur = new Date();
+  while (true){
+    var k = todayStr(cur);
+    if (byDay[k]) { streak++; cur.setDate(cur.getDate() - 1); }
+    else if (streak === 0 && k === todayStr()) { cur.setDate(cur.getDate() - 1); } // 今天还没跳，先看昨天
+    else break;
+    if (streak > 400) break;
+  }
+  st.innerHTML =
+    '<div class="stat"><b>' + days.length + '</b><span>打卡天数</span></div>' +
+    '<div class="stat"><b>' + totalGroups + '</b><span>累计组数</span></div>' +
+    '<div class="stat"><b>' + totalCount + '</b><span>累计个数</span></div>' +
+    '<div class="stat"><b>' + totalSec + '</b><span>累计秒数</span></div>' +
+    '<div class="stat"><b>' + streak + '</b><span>连续天数</span></div>' +
+    '<div class="stat"><b>' + Math.round(totalCount / Math.max(days.length,1)) + '</b><span>日均个数</span></div>';
+
+  list.innerHTML = renderDays(rs) || '<div class="empty">还没有记录，先去转一次吧</div>';
+  if (!cloudReady) list.insertAdjacentHTML('afterbegin', '<div class="login-tip">暂时连不上云端，显示的是本机缓存。</div>');
+}
+
+function renderDays(rs){
+  var byDay = {};
+  rs.forEach(function(r){ (byDay[r.day] = byDay[r.day] || []).push(r); });
+  var days = Object.keys(byDay).sort().reverse();
+  return days.map(function(day){
+    var arr = byDay[day].sort(function(a,b){ return a.slot - b.slot; });
+    var c = 0, s = 0;
+    arr.forEach(function(r){ if (r.kind === 'count') c += r.amount; else s += r.amount; });
+    var sum = [];
+    if (c) sum.push(c + ' 个');
+    if (s) sum.push(s + ' 秒');
+    var d = new Date(day + 'T00:00:00');
+    var wk = '日一二三四五六'[d.getDay()];
+    var chips = arr.map(function(r){
+      var seg = SEG[r.task_id] || SEG[0];
+      return '<span class="rc"><i style="background:' + seg.color + '">' + '</i>' + r.task_label +
+             (r.id ? '<button type="button" data-del="' + r.id + '" title="删除这条">×</button>' : '') + '</span>';
+    }).join('');
+    return '<div class="day"><div class="day__top">' +
+      '<span class="day__date">' + (d.getMonth()+1) + '月' + d.getDate() + '日 周' + wk + '</span>' +
+      '<span class="day__sum">' + arr.length + '/6 · ' + sum.join(' + ') + '</span>' +
+      '<button class="day__del" type="button" data-day="' + day + '">删这天</button>' +
+      '</div><div class="day__chips">' + chips + '</div></div>';
+  }).join('');
+}
+
+async function delRecord(id){
+  if (!confirm('删除这一条记录？')) return;
+  if (!user || !id) return;
+  try {
+    var res = await sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (res.error) throw res.error;
+    records = records.filter(function(r){ return r.id !== id; });
+    state.draws = state.draws.filter(function(x){ return x.id !== id; });
+    saveLocal();
+    renderAll();
+    toast('已删除');
+  } catch(e){ toast('删除失败，请检查网络'); }
+}
+
+async function delDay(day){
+  if (!confirm('删除 ' + day + ' 这一天的全部记录？')) return;
+  if (!user) return;
+  try {
+    var res = await sb.from('records').update({ deleted_at: new Date().toISOString() }).eq('day', day);
+    if (res.error) throw res.error;
+    records = records.filter(function(r){ return r.day !== day; });
+    if (day === todayStr()){ state.draws = []; saveLocal(); }
+    renderAll();
+    toast('已删除');
+  } catch(e){ toast('删除失败，请检查网络'); }
+}
+
+/* ================= 导出 ================= */
+function exportCSV(){
+  var rs = allRecords();
+  if (!rs.length){ toast('还没有记录'); return; }
+  var rows = [['日期','组次','任务','类型','数量']];
+  rs.slice().sort(function(a,b){ return a.day === b.day ? a.slot - b.slot : (a.day < b.day ? 1 : -1); })
+    .forEach(function(r){ rows.push([r.day, r.slot, r.task_label, r.kind === 'count' ? '个数' : '秒数', r.amount]); });
+  var csv = '\ufeff' + rows.map(function(r){ return r.join(','); }).join('\n');
+  var blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jump-records-' + todayStr() + '.csv';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+/* ================= 视图切换 ================= */
+function showView(name){
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.view === name); });
+  $('view-wheel').hidden = name !== 'wheel';
+  $('view-records').hidden = name !== 'records';
+  if (name === 'records') renderRecords();
+}
+
+/* ================= 事件 ================= */
+$('spin').addEventListener('click', spin);
 wheel.addEventListener('click', spin);
-document.getElementById('r-go').addEventListener('click', function(){ result.hidden = true; });
-document.addEventListener('keydown', function(e){
-  if (e.code === 'Space'){ e.preventDefault(); if (!result.hidden) return; spin(); }
+$('r-go').addEventListener('click', function(){ $('result').hidden = true; });
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){ showView(t.dataset.view); });
 });
-document.getElementById('reset').addEventListener('click', function(){
-  if (confirm('确定清空今天的记录吗？（给家长调试用）')){
-    state = { date: todayKey(), draws: [] };
-    save(); render();
+$('acct').addEventListener('click', function(){
+  if (user){
+    if (confirm('退出登录？')) { sb.auth.signOut().then(function(){ user = null; records = []; cloudReady = false; renderBar(); renderAll(); }); }
+  } else openAuth('login');
+});
+$('auth-go').addEventListener('click', doAuth);
+$('auth-close').addEventListener('click', closeAuth);
+$('auth-switch').addEventListener('click', function(){ openAuth(authMode === 'login' ? 'signup' : 'login'); });
+$('export').addEventListener('click', exportCSV);
+$('reset').addEventListener('click', function(){
+  if (!confirm('清空今天的记录？')) return;
+  state = { date: todayStr(), draws: [] };
+  saveLocal();
+  if (user && cloudReady){ delDay(todayStr()); }
+  renderAll();
+});
+$('records').addEventListener('click', function(e){
+  var t = e.target;
+  if (t.dataset.del){ delRecord(t.dataset.del); }
+  else if (t.dataset.day){ delDay(t.dataset.day); }
+});
+$('auth-pwd').addEventListener('keydown', function(e){ if (e.key === 'Enter') doAuth(); });
+document.addEventListener('keydown', function(e){
+  if (e.code === 'Space' && $('result').hidden && $('auth').hidden && !$('view-wheel').hidden){
+    e.preventDefault(); spin();
   }
 });
+window.addEventListener('online', function(){ flushPending(); pullRecords(); });
 
-load();
-render();
+/* ================= 启动 ================= */
+function renderAll(){ renderWheelState(); renderBar(); if (!$('view-records').hidden) renderRecords(); }
+
+async function boot(){
+  loadLocal();
+  loadPending();
+  renderAll();
+
+  var s = null;
+  try { var r = await sb.auth.getSession(); s = r.data.session; } catch(e){}
+  if (s && s.user){ user = s.user; renderBar(); await afterLogin(); }
+  else { renderBar(); }
+
+  sb.auth.onAuthStateChange(function(evt, session){
+    if (session && session.user && (!user || user.id !== session.user.id)){
+      user = session.user; renderBar(); afterLogin();
+    } else if (!session && user){ user = null; records = []; cloudReady = false; renderBar(); renderAll(); }
+  });
+
+  setInterval(function(){ if (user && !$('view-records').hidden) renderRecords(); }, 60000);
+}
+boot();
 </script>
 </body>
 </html>
