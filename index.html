@@ -288,19 +288,20 @@ var lastErr = '';
 var sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 var SEG = [
+  { task:'跳 61 秒', short:'61秒', face:'61 秒', color:'#8FCBF2', em:'⏱', kind:'time', amount:61,
+    tips:['争分夺秒，冲一下！','数一数这 61 秒你能跳几个？'] },
+  { task:'跳 60 秒', short:'60秒', face:'60 秒', color:'#C9B0F0', em:'🎵', kind:'time', amount:60,
+    tips:['整整一分钟，稳住节奏。','慢一点也完全没问题。'] },
+  { task:'跳 50 秒', short:'50秒', face:'50 秒', color:'#8FE0BE', em:'🌿', kind:'time', amount:50,
+    tips:['轻松局，热热身。','跳完记得喝口水。'] },
   { task:'跳 100 个', short:'100', face:'100 个', color:'#FF9E8E', em:'💪', kind:'count', amount:100,
     tips:['小猫咪说：你可以的！','稳稳地跳，一下就过去了。'] },
   { task:'跳 120 个', short:'120', face:'120 个', color:'#FFD36B', em:'⚡', kind:'count', amount:120,
     tips:['今天的你有点猛！','加油，相信你可以的！'] },
-  { task:'跳 80 个', short:'80', face:'80 个', color:'#8FE0BE', em:'🌿', kind:'count', amount:80,
-    tips:['轻松局，热热身。','跳完记得喝口水。'] },
-  { task:'跳 45 秒', short:'45秒', face:'45 秒', color:'#8FCBF2', em:'⏱', kind:'time', amount:45,
-    tips:['争分夺秒，加油！','数一数这 45 秒你能跳几个？'] },
-  { task:'跳 50 秒', short:'50秒', face:'50 秒', color:'#C9B0F0', em:'🎵', kind:'time', amount:50,
-    tips:['跟着节奏，一下一下。','慢一点也完全没问题。'] },
-  { task:'50 + 50 个', short:'50+50', face:'50+50', color:'#FFC08A', em:'🔁', kind:'count', amount:100,
-    tips:['分两组，中间歇 30 秒。','两口气跳完，很棒！'] }
+  { task:'跳 150 个', short:'150', face:'150 个', color:'#FFC08A', em:'🔥', kind:'count', amount:150,
+    tips:['冲刺一下，你可以的！','分成 75 + 75 也行哦。'] }
 ];
+
 var PER_DAY = 6;
 
 /* ================= 工具 ================= */
