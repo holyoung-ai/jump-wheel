@@ -168,6 +168,8 @@ svg{display:block;width:100%;height:100%}
 .presets button{border:1.5px solid #EADCCB;background:#fff;border-radius:14px;padding:6px 9px;font-family:inherit;
   font-size:12px;font-weight:800;color:#8A7264;cursor:pointer}
 .presets button.on{background:#FFE7DA;border-color:#FFB59A;color:#C9573A}
+.timer__test{width:30px;height:30px;border-radius:50%;border:1.5px solid #EADCCB;background:#fff;font-size:13px;
+  cursor:pointer;margin-left:auto;line-height:1;flex:0 0 auto}
 .timer__go{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(180deg,#FF9E8E,#FF7E6B);
   color:#fff;font-size:15px;cursor:pointer;box-shadow:0 8px 16px -8px rgba(230,100,70,.9);flex:0 0 auto;line-height:1}
 .timer__bar{height:8px;border-radius:6px;background:#F3E9DC;margin-top:10px;overflow:hidden}
@@ -231,6 +233,7 @@ svg{display:block;width:100%;height:100%}
   <div class="timer">
   <div class="timer__row">
     <div class="timer__time" id="t-time">--:--</div>
+    <button class="timer__test" id="t-test" type="button" title="试听音乐">🔊</button>
     <div class="presets" id="t-presets">
       <button type="button" data-sec="61">61″</button>
       <button type="button" data-sec="60">60″</button>
@@ -304,6 +307,8 @@ svg{display:block;width:100%;height:100%}
     <button class="go" id="debug-close" type="button">知道了</button>
   </div>
 </div>
+
+<audio id="bgm" src="./audio/bgm.mp3" preload="auto"></audio>
 
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
@@ -573,15 +578,29 @@ async function afterLogin(){
 /* ================= 转盘逻辑 ================= */
 /* ================= 计时器 ================= */
 var TIMER = { total: 60, left: 60, endAt: 0, running: false, tick: 0, phase: 'idle' };
-var bgm = new Audio('./audio/bgm.mp3');
-bgm.preload = 'auto';
-/* 提前把音频抓到本地缓存，避免第一次点开始等网络 */
-try {
-  fetch('./audio/bgm.mp3').then(function(r){ return r.blob(); }).then(function(b){
-    var url = URL.createObjectURL(b);
-    if (!bgm.src || bgm.src.indexOf('blob:') !== 0){ bgm.src = url; bgm.load(); }
-  }).catch(function(){});
-} catch(e){}
+var bgm = document.getElementById('bgm');
+var lastAudioErr = '';
+/* GitHub Pages 返回 audio/mp3，Safari 可能拒播；jsDelivr 返回标准 audio/mpeg */
+var AUDIO_LOCAL = './audio/bgm.mp3';
+var AUDIO_CDN = 'https://cdn.jsdelivr.net/gh/holyoung-ai/jump-wheel@main/audio/bgm.mp3';
+var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var AUDIO_SRC = [IS_IOS ? AUDIO_CDN : AUDIO_LOCAL, IS_IOS ? AUDIO_LOCAL : AUDIO_CDN];
+var audioIdx = 0;
+try { bgm.src = AUDIO_SRC[0]; bgm.load(); } catch(e){}
+function audioFail(msg){
+  lastAudioErr = msg;
+  var el = document.getElementById('t-hint');
+  if (el) el.textContent = '音乐没响：' + msg + ' · 先检查手机侧边静音键';
+}
+bgm.addEventListener('error', function(){
+  if (audioIdx < AUDIO_SRC.length - 1){
+    audioIdx++;
+    try { bgm.src = AUDIO_SRC[audioIdx]; bgm.load(); toast('已切换备用音源'); } catch(e){}
+  } else {
+    audioFail('文件加载失败');
+  }
+});
 
 function fmtTime(sec){
   sec = Math.max(0, Math.ceil(sec));
@@ -650,8 +669,8 @@ function startTimer(sec){
     bgm.addEventListener('playing', onPlaying);
     bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.9;
     var pr = bgm.play();
-    if (pr && pr.catch) pr.catch(function(){});
-  } catch(e){}
+    if (pr && pr.catch) pr.catch(function(err){ audioFail((err && err.name) ? err.name : '被拦截'); });
+  } catch(e){ audioFail(e.name || '异常'); }
   /* 兜底：6 秒还没响，也进入准备，别卡死 */
   setTimeout(function(){ if (!started){ started = true; beginPrep(true); } }, 6000);
 }
@@ -1006,6 +1025,15 @@ $('t-go').addEventListener('click', function(){
   if (TIMER.phase === 'paused'){ resumeTimer(); return; }
   TIMER.left = TIMER.total;
   startTimer();
+});
+$('t-test').addEventListener('click', function(){
+  try {
+    bgm.pause(); bgm.currentTime = 0; bgm.volume = 1;
+    var p = bgm.play();
+    if (p && p.then) p.then(function(){ toast('正在播放，能听到吗？'); })
+      .catch(function(err){ toast('播放失败：' + ((err && err.name) || '未知') + '（检查静音键）'); });
+  } catch(e){ toast('播放失败：' + (e.name || '未知')); }
+  setTimeout(function(){ try { bgm.pause(); } catch(e){} }, 3000);
 });
 $('t-presets').addEventListener('click', function(e){
   var b = e.target.closest('button');
