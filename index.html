@@ -572,9 +572,16 @@ async function afterLogin(){
 
 /* ================= 转盘逻辑 ================= */
 /* ================= 计时器 ================= */
-var TIMER = { total: 60, left: 60, endAt: 0, running: false, tick: 0 };
+var TIMER = { total: 60, left: 60, endAt: 0, running: false, tick: 0, phase: 'idle' };
 var bgm = new Audio('./audio/bgm.mp3');
 bgm.preload = 'auto';
+/* 提前把音频抓到本地缓存，避免第一次点开始等网络 */
+try {
+  fetch('./audio/bgm.mp3').then(function(r){ return r.blob(); }).then(function(b){
+    var url = URL.createObjectURL(b);
+    if (!bgm.src || bgm.src.indexOf('blob:') !== 0){ bgm.src = url; bgm.load(); }
+  }).catch(function(){});
+} catch(e){}
 
 function fmtTime(sec){
   sec = Math.max(0, Math.ceil(sec));
@@ -600,7 +607,7 @@ function unlockSpeech(){
   } catch(e){}
 }
 function setPreset(sec){
-  if (TIMER.running) return;
+  if (TIMER.phase !== 'idle' && TIMER.phase !== 'done') return;
   TIMER.total = sec; TIMER.left = sec;
   var btns = document.querySelectorAll('#t-presets button');
   for (var i = 0; i < btns.length; i++){
@@ -623,20 +630,61 @@ function tickTimer(){
 }
 function startTimer(sec){
   if (sec) { TIMER.total = sec; TIMER.left = sec; setPreset(sec); }
-  if (TIMER.running) return;
+  if (TIMER.running || TIMER.phase === 'prep') return;
   unlockSpeech();
+  TIMER.phase = 'prep';
+  $('t-go').disabled = true;
+  $('t-go').textContent = '⏳';
+  $('t-time').textContent = '5';
+  $('t-fill').style.width = '100%';
+  $('t-hint').textContent = '准备开始…（等音乐响）';
+
+  var started = false;
+  function onPlaying(){
+    if (started) return;
+    started = true;
+    try { bgm.removeEventListener('playing', onPlaying); } catch(e){}
+    beginPrep(false);
+  }
+  try {
+    bgm.addEventListener('playing', onPlaying);
+    bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.9;
+    var pr = bgm.play();
+    if (pr && pr.catch) pr.catch(function(){});
+  } catch(e){}
+  /* 兜底：6 秒还没响，也进入准备，别卡死 */
+  setTimeout(function(){ if (!started){ started = true; beginPrep(true); } }, 6000);
+}
+
+function beginPrep(noAudio){
+  if (TIMER.phase !== 'prep') return;
+  var left = 5;
+  $('t-time').textContent = left;
+  $('t-hint').textContent = noAudio ? '音乐加载慢，先做准备' : '准备活动 · 音乐已开始';
+  clearInterval(prepTimer);
+  prepTimer = setInterval(function(){
+    left--;
+    if (left > 0){ $('t-time').textContent = left; }
+    else { clearInterval(prepTimer); startCountdown(); }
+  }, 1000);
+}
+
+function startCountdown(){
+  TIMER.phase = 'run';
   TIMER.endAt = performance.now() + TIMER.total * 1000;
   TIMER.left = TIMER.total;
   TIMER.running = true;
+  $('t-go').disabled = false;
   $('t-go').textContent = '❚❚';
   $('t-hint').textContent = '加油！音乐停就完成';
-  try { bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.9; bgm.play().catch(function(){}); } catch(e){}
   clearInterval(TIMER.tick);
   TIMER.tick = setInterval(tickTimer, 150);
   paintTimer();
 }
+
 function pauseTimer(){
-  if (!TIMER.running) return;
+  if (TIMER.phase !== 'run') return;
+  TIMER.phase = 'paused';
   TIMER.running = false;
   clearInterval(TIMER.tick);
   try { bgm.pause(); } catch(e){}
@@ -644,8 +692,10 @@ function pauseTimer(){
   $('t-hint').textContent = '已暂停，点 ▶ 继续';
   paintTimer();
 }
+
 function resumeTimer(){
-  if (TIMER.running || TIMER.left <= 0) return;
+  if (TIMER.phase !== 'paused') return;
+  TIMER.phase = 'run';
   TIMER.endAt = performance.now() + TIMER.left * 1000;
   TIMER.running = true;
   $('t-go').textContent = '❚❚';
@@ -654,6 +704,7 @@ function resumeTimer(){
   clearInterval(TIMER.tick);
   TIMER.tick = setInterval(tickTimer, 150);
 }
+
 function fadeStop(){
   var v = bgm.volume;
   var id = setInterval(function(){
@@ -662,18 +713,23 @@ function fadeStop(){
     else { try { bgm.volume = v; } catch(e){} }
   }, 40);
 }
+
 function finishTimer(){
-  if (!TIMER.running && TIMER.left > 0) return;
+  if (TIMER.phase !== 'run') return;
+  TIMER.phase = 'done';
   TIMER.running = false;
   clearInterval(TIMER.tick);
   TIMER.left = 0;
   paintTimer();
+  $('t-go').disabled = false;
   $('t-go').textContent = '↻';
   $('t-hint').textContent = '完成！点 ↻ 再来一次';
   try { fadeStop(); } catch(e){}
   say('运动结束');
   try { if (navigator.vibrate) navigator.vibrate([30, 80, 30, 80, 60]); } catch(e){}
 }
+
+var prepTimer = 0;
 
 var rot = 0, spinning = false;
 function remaining(){ return PER_DAY - state.draws.length; }
@@ -945,10 +1001,11 @@ $('r-go').addEventListener('click', function(){
   if (t) startTimer(parseInt(t, 10));
 });
 $('t-go').addEventListener('click', function(){
-  if (TIMER.running){ pauseTimer(); }
-  else if (TIMER.left <= 0){ TIMER.left = TIMER.total; startTimer(); }
-  else if (TIMER.left < TIMER.total){ resumeTimer(); }
-  else { startTimer(); }
+  if (TIMER.phase === 'prep') return;
+  if (TIMER.phase === 'run'){ pauseTimer(); return; }
+  if (TIMER.phase === 'paused'){ resumeTimer(); return; }
+  TIMER.left = TIMER.total;
+  startTimer();
 });
 $('t-presets').addEventListener('click', function(e){
   var b = e.target.closest('button');
