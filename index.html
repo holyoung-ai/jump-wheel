@@ -687,6 +687,27 @@ bgm.addEventListener('error', function(){
 });
 loadAudioBuffer();
 
+/* ===== 屏幕常亮（倒计时/播放音乐期间不息屏） ===== */
+var wakeLock = null;
+function keepAwake(){
+  try {
+    if (!('wakeLock' in navigator)) return;
+    if (wakeLock && !wakeLock.released) return;
+    navigator.wakeLock.request('screen').then(function(lock){
+      wakeLock = lock;
+      lock.addEventListener('release', function(){ wakeLock = null; });
+    }).catch(function(){});
+  } catch(e){}
+}
+function releaseAwake(){
+  try { if (wakeLock){ wakeLock.release(); wakeLock = null; } } catch(e){}
+}
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible' &&
+      (TIMER.phase === 'prep' || TIMER.phase === 'run' || TIMER.phase === 'paused')) keepAwake();
+});
+
+
 function fmtTime(sec){
   sec = Math.max(0, Math.ceil(sec));
   var m = Math.floor(sec / 60), s = sec % 60;
@@ -744,6 +765,7 @@ function startTimer(sec){
   $('t-hint').textContent = '准备开始…（等音乐响）';
 
   getAC();
+  keepAwake();
   musicOffset = 0;
   var ok = startMusic(0);
   if (ok && ABUF){
@@ -793,6 +815,7 @@ function pauseTimer(){
   TIMER.running = false;
   clearInterval(TIMER.tick);
   pauseMusic();
+  releaseAwake();
   $('t-go').textContent = '▶';
   $('t-hint').textContent = '已暂停，点 ▶ 继续';
   paintTimer();
@@ -800,6 +823,7 @@ function pauseTimer(){
 
 function resumeTimer(){
   if (TIMER.phase !== 'paused') return;
+  keepAwake();
   TIMER.phase = 'run';
   TIMER.endAt = performance.now() + TIMER.left * 1000;
   TIMER.running = true;
@@ -823,6 +847,7 @@ function finishTimer(){
   if (TIMER.phase !== 'run') return;
   TIMER.phase = 'done';
   TIMER.running = false;
+  releaseAwake();
   clearInterval(TIMER.tick);
   TIMER.left = 0;
   paintTimer();
