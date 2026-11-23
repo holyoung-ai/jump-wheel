@@ -159,6 +159,22 @@ svg{display:block;width:100%;height:100%}
   font-size:12px;padding:9px 16px;border-radius:20px;opacity:0;transition:.25s;z-index:40;pointer-events:none;max-width:80vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
+/* 计时器 */
+.timer{width:100%;max-width:420px;margin-top:14px;background:#fff;border-radius:18px;padding:12px 14px 10px;
+  box-shadow:0 8px 20px -14px rgba(160,110,70,.8);position:relative;z-index:2}
+.timer__row{display:flex;align-items:center;gap:10px}
+.timer__time{font-size:28px;font-weight:900;color:#E2653F;font-variant-numeric:tabular-nums;line-height:1;min-width:92px}
+.presets{display:flex;gap:6px;margin-left:auto}
+.presets button{border:1.5px solid #EADCCB;background:#fff;border-radius:14px;padding:6px 9px;font-family:inherit;
+  font-size:12px;font-weight:800;color:#8A7264;cursor:pointer}
+.presets button.on{background:#FFE7DA;border-color:#FFB59A;color:#C9573A}
+.timer__go{width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(180deg,#FF9E8E,#FF7E6B);
+  color:#fff;font-size:15px;cursor:pointer;box-shadow:0 8px 16px -8px rgba(230,100,70,.9);flex:0 0 auto;line-height:1}
+.timer__bar{height:8px;border-radius:6px;background:#F3E9DC;margin-top:10px;overflow:hidden}
+.timer__bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#FFC08A,#FF7E6B);border-radius:6px;
+  transition:width .15s linear}
+.timer__hint{font-size:10.5px;color:#A08C7C;margin-top:6px;letter-spacing:.04em}
+
 @media (max-width:360px){
   h1{font-size:21px}
   .slot{width:28px;height:28px;font-size:8px}
@@ -212,7 +228,21 @@ svg{display:block;width:100%;height:100%}
     <button class="spin" id="spin" type="button">转！<span id="spin-sub">第 1 组</span></button>
   </div>
 
-  <div class="legend" id="legend"></div>
+  <div class="timer">
+  <div class="timer__row">
+    <div class="timer__time" id="t-time">--:--</div>
+    <div class="presets" id="t-presets">
+      <button type="button" data-sec="61">61″</button>
+      <button type="button" data-sec="60">60″</button>
+      <button type="button" data-sec="50">50″</button>
+    </div>
+    <button class="timer__go" id="t-go" type="button">▶</button>
+  </div>
+  <div class="timer__bar"><i id="t-fill"></i></div>
+  <div class="timer__hint" id="t-hint">选个时长，点 ▶ 开始</div>
+</div>
+
+<div class="legend" id="legend"></div>
 
   <div class="footline">
     一天 6 组，转完就跳 · 谁耍赖谁小狗<br>
@@ -541,6 +571,110 @@ async function afterLogin(){
 }
 
 /* ================= 转盘逻辑 ================= */
+/* ================= 计时器 ================= */
+var TIMER = { total: 60, left: 60, endAt: 0, running: false, tick: 0 };
+var bgm = new Audio('./audio/bgm.mp3');
+bgm.preload = 'auto';
+
+function fmtTime(sec){
+  sec = Math.max(0, Math.ceil(sec));
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+function say(text){
+  try {
+    if (!('speechSynthesis' in window)) return false;
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 0.95; u.pitch = 1.05;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch(e){ return false; }
+}
+function unlockSpeech(){
+  try {
+    if (!('speechSynthesis' in window)) return;
+    var u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch(e){}
+}
+function setPreset(sec){
+  if (TIMER.running) return;
+  TIMER.total = sec; TIMER.left = sec;
+  var btns = document.querySelectorAll('#t-presets button');
+  for (var i = 0; i < btns.length; i++){
+    btns[i].classList.toggle('on', parseInt(btns[i].dataset.sec, 10) === sec);
+  }
+  $('t-time').textContent = fmtTime(sec);
+  $('t-fill').style.width = '100%';
+  $('t-hint').textContent = sec + ' 秒 · 点 ▶ 开始';
+}
+function paintTimer(){
+  $('t-time').textContent = fmtTime(TIMER.left);
+  var pct = TIMER.total ? (TIMER.left / TIMER.total * 100) : 0;
+  $('t-fill').style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
+}
+function tickTimer(){
+  if (!TIMER.running) return;
+  TIMER.left = Math.max(0, (TIMER.endAt - performance.now()) / 1000);
+  paintTimer();
+  if (TIMER.left <= 0) finishTimer();
+}
+function startTimer(sec){
+  if (sec) { TIMER.total = sec; TIMER.left = sec; setPreset(sec); }
+  if (TIMER.running) return;
+  unlockSpeech();
+  TIMER.endAt = performance.now() + TIMER.total * 1000;
+  TIMER.left = TIMER.total;
+  TIMER.running = true;
+  $('t-go').textContent = '❚❚';
+  $('t-hint').textContent = '加油！音乐停就完成';
+  try { bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.9; bgm.play().catch(function(){}); } catch(e){}
+  clearInterval(TIMER.tick);
+  TIMER.tick = setInterval(tickTimer, 150);
+  paintTimer();
+}
+function pauseTimer(){
+  if (!TIMER.running) return;
+  TIMER.running = false;
+  clearInterval(TIMER.tick);
+  try { bgm.pause(); } catch(e){}
+  $('t-go').textContent = '▶';
+  $('t-hint').textContent = '已暂停，点 ▶ 继续';
+  paintTimer();
+}
+function resumeTimer(){
+  if (TIMER.running || TIMER.left <= 0) return;
+  TIMER.endAt = performance.now() + TIMER.left * 1000;
+  TIMER.running = true;
+  $('t-go').textContent = '❚❚';
+  $('t-hint').textContent = '加油！音乐停就完成';
+  try { bgm.play().catch(function(){}); } catch(e){}
+  clearInterval(TIMER.tick);
+  TIMER.tick = setInterval(tickTimer, 150);
+}
+function fadeStop(){
+  var v = bgm.volume;
+  var id = setInterval(function(){
+    v -= 0.15;
+    if (v <= 0){ clearInterval(id); try { bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.9; } catch(e){} }
+    else { try { bgm.volume = v; } catch(e){} }
+  }, 40);
+}
+function finishTimer(){
+  if (!TIMER.running && TIMER.left > 0) return;
+  TIMER.running = false;
+  clearInterval(TIMER.tick);
+  TIMER.left = 0;
+  paintTimer();
+  $('t-go').textContent = '↻';
+  $('t-hint').textContent = '完成！点 ↻ 再来一次';
+  try { fadeStop(); } catch(e){}
+  say('运动结束');
+  try { if (navigator.vibrate) navigator.vibrate([30, 80, 30, 80, 60]); } catch(e){}
+}
+
 var rot = 0, spinning = false;
 function remaining(){ return PER_DAY - state.draws.length; }
 
@@ -634,6 +768,8 @@ function showResult(i, slot){
   $('r-task').textContent = s.task;
   $('r-tip').textContent = s.tips[Math.floor(Math.random() * s.tips.length)];
   $('r-go').textContent = slot === PER_DAY ? '完成今天 🎉' : '去跳！';
+  if (s.kind === 'time'){ $('r-go').textContent = '开始 ' + s.amount + ' 秒倒计时'; $('r-go').dataset.timer = s.amount; }
+  else { $('r-go').dataset.timer = ''; }
   $('result').hidden = false;
 }
 
@@ -803,7 +939,21 @@ function showView(name){
 /* ================= 事件 ================= */
 $('spin').addEventListener('click', spin);
 wheel.addEventListener('click', spin);
-$('r-go').addEventListener('click', function(){ $('result').hidden = true; });
+$('r-go').addEventListener('click', function(){
+  var t = this.dataset.timer;
+  $('result').hidden = true;
+  if (t) startTimer(parseInt(t, 10));
+});
+$('t-go').addEventListener('click', function(){
+  if (TIMER.running){ pauseTimer(); }
+  else if (TIMER.left <= 0){ TIMER.left = TIMER.total; startTimer(); }
+  else if (TIMER.left < TIMER.total){ resumeTimer(); }
+  else { startTimer(); }
+});
+$('t-presets').addEventListener('click', function(e){
+  var b = e.target.closest('button');
+  if (b) setPreset(parseInt(b.dataset.sec, 10));
+});
 document.querySelectorAll('.tab').forEach(function(t){
   t.addEventListener('click', function(){ showView(t.dataset.view); });
 });
@@ -883,6 +1033,7 @@ async function boot(){
 
   setInterval(function(){ if (user && !$('view-records').hidden) renderRecords(); }, 60000);
 }
+setPreset(60);
 boot();
 </script>
 </body>
